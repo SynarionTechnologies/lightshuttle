@@ -23,7 +23,6 @@ lightshuttle/
 ├── core/         # The orchestrator engine (API + runtime)
 ├── cli/          # Command-line interface to control the orchestrator
 ├── dashboard/    # Web-based UI
-├── common/       # Shared types and utilities
 ```
 
 ---
@@ -56,7 +55,7 @@ cargo run -p lightshuttle-core
 ### Use the CLI
 
 ```bash
-cargo run -p cli -- help
+cargo run -p lightshuttle-cli -- help
 ```
 
 ---
@@ -82,7 +81,7 @@ The dashboard is not yet implemented — but will eventually allow you to:
 
 ## 📄 License
 
-Licensed under the [MIT License](LICENSE).
+Licensed under the [AGPL-3.0 license](LICENSE).
 
 ---
 
