@@ -23,7 +23,6 @@ lightshuttle/
 ├── core/         # The orchestrator engine (API + runtime)
 ├── cli/          # Command-line interface to control the orchestrator
 ├── dashboard/    # Web-based UI
-├── common/       # Shared types and utilities
 ```
 
 ---
@@ -35,24 +34,28 @@ lightshuttle/
 - [Rust](https://rust-lang.org/tools/install) (>= 1.75)
 - [Docker](https://www.docker.com/) (for development/testing)
 
-### Clone and build
+### Clone
 
 ```bash
 git clone https://github.com/LightShuttle/lightshuttle.git
 cd lightshuttle
-cargo build --release
 ```
 
-### Run the orchestrator (core)
+### Build
+```bash
+cargo build --workspace
+```
+
+### Run the orchestrator
 
 ```bash
-cargo run -p core
+cargo run -p lightshuttle-core
 ```
 
 ### Use the CLI
 
 ```bash
-cargo run -p cli -- help
+cargo run -p lightshuttle-cli -- help
 ```
 
 ---
@@ -78,7 +81,7 @@ The dashboard is not yet implemented — but will eventually allow you to:
 
 ## 📄 License
 
-Licensed under the [MIT License](LICENSE).
+Licensed under the [AGPL-3.0 license](LICENSE).
 
 ---
 
