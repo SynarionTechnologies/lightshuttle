@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "src/core",
+    "src/cli",
+    "src/dashboard"
+]

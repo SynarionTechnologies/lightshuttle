@@ -35,18 +35,22 @@ lightshuttle/
 - [Rust](https://rust-lang.org/tools/install) (>= 1.75)
 - [Docker](https://www.docker.com/) (for development/testing)
 
-### Clone and build
+### Clone
 
 ```bash
 git clone https://github.com/LightShuttle/lightshuttle.git
 cd lightshuttle
-cargo build --release
 ```
 
-### Run the orchestrator (core)
+### Build
+```bash
+cargo build --workspace
+```
+
+### Run the orchestrator
 
 ```bash
-cargo run -p core
+cargo run -p lightshuttle-core
 ```
 
 ### Use the CLI
