@@ -49,13 +49,13 @@ cargo build --workspace
 ### Run the orchestrator
 
 ```bash
-cargo run -p lightshuttle-core
+cargo run -p lightshuttle_core
 ```
 
 ### Use the CLI
 
 ```bash
-cargo run -p lightshuttle-cli -- help
+cargo run -p lightshuttle_cli -- help
 ```
 
 ---
