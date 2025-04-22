@@ -1,6 +1,7 @@
-mod health;
-mod version;
-mod metrics;
+pub mod apps;
+pub mod health;
+pub mod version;
+pub mod metrics;
 
 pub use health::health;
 pub use version::version;

@@ -1,7 +1,11 @@
 [package]
-name = "lightshuttle-core"
+name = "lightshuttle_core"
 version = "0.1.0"
 edition = "2021"
+
+[lib]
+name = "lightshuttle_core"
+path = "src/lib.rs"
 
 [dependencies]
 # Web framework (router, handlers)
@@ -9,6 +13,10 @@ axum = "0.7"
 
 # Async runtime
 tokio = { version = "1", features = ["full"] }
+
+# Documentation
+utoipa = "4"
+utoipa-swagger-ui = "4"
 
 # JSON serialization
 serde = { version = "1", features = ["derive"] }
@@ -22,4 +30,5 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
 
 # Utilities for testing (oneshot, etc.)
+http-body-util = "0.1"
 tower = { version = "0.4", features = ["util"] }
