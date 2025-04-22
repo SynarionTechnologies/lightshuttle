@@ -4,3 +4,22 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+# Web framework (router, handlers)
+axum = "0.7"
+
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# JSON serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Middleware: CORS
+tower-http = { version = "0.5", features = ["cors"] }
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
+
+# Utilities for testing (oneshot, etc.)
+tower = { version = "0.4", features = ["util"] }

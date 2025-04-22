@@ -4,3 +4,4 @@ members = [
     "src/cli",
     "src/dashboard"
 ]
+resolver = "2"
