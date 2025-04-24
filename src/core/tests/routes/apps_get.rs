@@ -1,10 +1,3 @@
-use lightshuttle_core::app::create_app;
-use axum::{body::Body, http::{Request, StatusCode}};
-use tower::util::ServiceExt;
-use http_body_util::BodyExt;
-use serde_json::Value;
-
-
 #[tokio::test]
 async fn apps_basic_returns_ok() {
     let app = create_app();

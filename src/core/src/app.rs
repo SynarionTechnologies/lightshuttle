@@ -1,10 +1,10 @@
-use crate::routes::{apps::get_app, apps::list_apps, health, metrics, version};
+use crate::routes::{apps::{create_app, get_app, list_apps}, health, metrics, version};
 use axum::{routing::get, Router};
 use tower_http::cors::CorsLayer;
 
-pub fn create_app() -> Router {
+pub fn build_router() -> Router {
     Router::new()
-        .route("/apps", get(list_apps))
+        .route("/apps", get(list_apps).post(create_app))
         .route("/apps/:id", get(get_app))
         .route("/health", get(health))
         .route("/version", get(version))
@@ -21,7 +21,7 @@ mod tests {
 
     #[tokio::test]
     async fn health_works() {
-        let app = create_app();
+        let app = build_router();
         let response = app
             .oneshot(
                 Request::builder()
@@ -36,7 +36,7 @@ mod tests {
 
     #[tokio::test]
     async fn version_works() {
-        let app = create_app();
+        let app = build_router();
         let response = app
             .oneshot(
                 Request::builder()
@@ -51,7 +51,7 @@ mod tests {
 
     #[tokio::test]
     async fn metrics_works() {
-        let app = create_app();
+        let app = build_router();
         let response = app
             .oneshot(
                 Request::builder()
