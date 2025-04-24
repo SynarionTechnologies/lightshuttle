@@ -1,7 +1,8 @@
 mod app;
+mod docker;
 mod routes;
 
-use app::create_app;
+use app::build_router;
 use std::net::SocketAddr;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -17,5 +18,5 @@ async fn main() {
 
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
 
-    axum::serve(listener, create_app()).await.unwrap();
+    axum::serve(listener, build_router()).await.unwrap();
 }
