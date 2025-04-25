@@ -1,5 +1,12 @@
-use axum::{extract::Query, extract::Path, http::StatusCode, response::Json};
+use axum::{
+    extract::{Json, Path, Query},
+    http::StatusCode,
+    response::IntoResponse,
+};
+
 use serde::{Deserialize, Serialize};
+
+use crate::docker::launch_container;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct AppInstance {
@@ -31,6 +38,33 @@ pub struct PaginatedResponse<T> {
     page: usize,
     limit: usize,
     items: Vec<T>,
+}
+
+#[derive(Deserialize)]
+pub struct CreateAppRequest {
+    pub name: String,
+    pub image: String,
+    pub ports: Vec<u16>,
+    pub container_port: u16,
+}
+
+pub async fn create_app(Json(payload): Json<CreateAppRequest>) -> impl IntoResponse {
+    match launch_container(&payload.name, &payload.image, &payload.ports, payload.container_port) {
+        Ok(container_id) => (
+            StatusCode::CREATED,
+            Json(serde_json::json!({
+                "status": "success",
+                "container_id": container_id
+            }))
+        ),
+        Err(e) => (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({
+                "status": "error",
+                "message": e
+            }))
+        )
+    }
 }
 
 pub async fn list_apps(Query(pagination): Query<Pagination>) -> (StatusCode, Json<PaginatedResponse<AppInstance>>) {
