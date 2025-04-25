@@ -1,6 +1,12 @@
+use axum::{body::Body, http::{Request, StatusCode}};
+use http_body_util::BodyExt;
+use lightshuttle_core::app::build_router;
+use serde_json::Value;
+use tower::ServiceExt;
+
 #[tokio::test]
 async fn apps_basic_returns_ok() {
-    let app = create_app();
+    let app = build_router();
     let response = app
         .oneshot(Request::builder().uri("/apps").body(Body::empty()).unwrap())
         .await
@@ -11,7 +17,7 @@ async fn apps_basic_returns_ok() {
 
 #[tokio::test]
 async fn apps_paginated_returns_data() {
-    let app = create_app();
+    let app = build_router();
     let response = app
         .oneshot(Request::builder().uri("/apps?page=2&limit=5").body(Body::empty()).unwrap())
         .await
@@ -29,7 +35,7 @@ async fn apps_paginated_returns_data() {
 
 #[tokio::test]
 async fn apps_pagination_overflow_returns_empty() {
-    let app = create_app();
+    let app = build_router();
     let response = app
         .oneshot(Request::builder().uri("/apps?page=1000&limit=10").body(Body::empty()).unwrap())
         .await
@@ -45,7 +51,7 @@ async fn apps_pagination_overflow_returns_empty() {
 
 #[tokio::test]
 async fn apps_get_by_id_works() {
-    let app = create_app();
+    let app = build_router();
     let response = app
         .oneshot(Request::builder().uri("/apps/1").body(Body::empty()).unwrap())
         .await
@@ -62,7 +68,7 @@ async fn apps_get_by_id_works() {
 
 #[tokio::test]
 async fn apps_get_by_id_not_found() {
-    let app = create_app();
+    let app = build_router();
     let response = app
         .oneshot(Request::builder().uri("/apps/9999").body(Body::empty()).unwrap())
         .await
