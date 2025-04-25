@@ -1,19 +1,25 @@
 use std::process::Command;
 
 /// Launches a Docker container using the `docker` CLI.
-/// 
+///
 /// # Arguments
 /// - `name`: Name to assign to the container
 /// - `image`: Docker image to run (e.g., `nginx:latest`)
-/// - `ports`: List of ports to expose (host:container binding)
-/// 
+/// - `host_ports`: List of ports to expose (host:container binding)
+/// - `container_port`: Internal port exposed by the container (e.g., 80 for nginx)
+///
 /// # Returns
-/// - `Ok(container_name)` on success
+/// - `Ok(container_id)` on success
 /// - `Err(message)` on failure
-pub fn launch_container(name: &str, image: &str, ports: &[u16]) -> Result<String, String> {
-    let port_args: Vec<String> = ports
+pub fn launch_container(
+    name: &str,
+    image: &str,
+    host_ports: &[u16],
+    container_port: u16
+) -> Result<String, String> {
+    let port_args: Vec<String> = host_ports
         .iter()
-        .flat_map(|port| vec!["-p".to_string(), format!("{}:{}", port, port)])
+        .flat_map(|host| vec!["-p".to_string(), format!("{host}:{container_port}")])
         .collect();
 
     let mut args = vec!["run", "-d", "--rm", "--name", name];
@@ -33,3 +39,6 @@ pub fn launch_container(name: &str, image: &str, ports: &[u16]) -> Result<String
         Err(format!("Docker error: {}", err.trim()))
     }
 }
+
+
+

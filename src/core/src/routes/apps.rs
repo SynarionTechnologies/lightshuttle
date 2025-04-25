@@ -45,10 +45,11 @@ pub struct CreateAppRequest {
     pub name: String,
     pub image: String,
     pub ports: Vec<u16>,
+    pub container_port: u16,
 }
 
 pub async fn create_app(Json(payload): Json<CreateAppRequest>) -> impl IntoResponse {
-    match launch_container(&payload.name, &payload.image, &payload.ports) {
+    match launch_container(&payload.name, &payload.image, &payload.ports, payload.container_port) {
         Ok(container_id) => (
             StatusCode::CREATED,
             Json(serde_json::json!({

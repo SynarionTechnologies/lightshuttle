@@ -9,7 +9,7 @@ async fn test_launch_container_via_cli() {
         return;
     }
 
-    let result = launch_container("test-nginx-lightshuttle", "nginx:latest", &[8089]);
+    let result = launch_container("test-nginx-lightshuttle", "nginx:latest", &[8089], 80);
 
     match result {
         Ok(container_id) => {

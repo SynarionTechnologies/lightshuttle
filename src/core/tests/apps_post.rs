@@ -1,4 +1,8 @@
-use axum::{body::Body, http::{Request, StatusCode}};
+use axum::{
+    body,
+    body::Body,
+    http::{Request, StatusCode},
+};
 use lightshuttle_core::app::build_router;
 use serde_json::json;
 use tower::ServiceExt;
@@ -10,12 +14,19 @@ async fn post_apps_should_succeed() {
         return;
     }
 
+    let container_name = "test-nginx";
+
+    let _ = std::process::Command::new("docker")
+        .args(["rm", "-f", container_name])
+        .output();
+
     let app = build_router();
 
     let payload = json!({
-        "name": "test-nginx",
+        "name": container_name,
         "image": "nginx:latest",
-        "ports": [8080]
+        "ports": [8080],
+        "container_port": 80
     });
 
     let request = Request::builder()
@@ -26,5 +37,16 @@ async fn post_apps_should_succeed() {
         .unwrap();
 
     let response = app.oneshot(request).await.unwrap();
-    assert_eq!(response.status(), StatusCode::CREATED);
+    let status = response.status();
+    let body_bytes = body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let body = String::from_utf8_lossy(&body_bytes);
+
+    println!("Status: {}", status);
+    println!("Body: {}", body);
+
+    let _ = std::process::Command::new("docker")
+        .args(["rm", "-f", container_name])
+        .output();
+
+    assert_eq!(status, StatusCode::CREATED);
 }
