@@ -6,8 +6,9 @@ use axum::{
 
 use serde::{Deserialize, Serialize};
 
-use crate::docker::launch_container;
+use crate::docker::{get_running_containers, launch_container};
 
+/// Represents an application instance (a running Docker container).
 #[derive(Serialize, Deserialize, Clone)]
 pub struct AppInstance {
     pub id: u32,
@@ -18,6 +19,7 @@ pub struct AppInstance {
     pub created_at: String,
 }
 
+/// Represents the status of an application.
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum AppStatus {
@@ -26,20 +28,23 @@ pub enum AppStatus {
     Error,
 }
 
+/// Pagination parameters for listing applications.
 #[derive(Deserialize)]
 pub struct Pagination {
-    page: Option<usize>,
-    limit: Option<usize>,
+    pub page: Option<usize>,
+    pub limit: Option<usize>,
 }
 
+/// Standard response format for paginated lists.
 #[derive(Serialize)]
 pub struct PaginatedResponse<T> {
-    total: usize,
-    page: usize,
-    limit: usize,
-    items: Vec<T>,
+    pub total: usize,
+    pub page: usize,
+    pub limit: usize,
+    pub items: Vec<T>,
 }
 
+/// Request payload for creating a new application/container.
 #[derive(Deserialize)]
 pub struct CreateAppRequest {
     pub name: String,
@@ -48,6 +53,16 @@ pub struct CreateAppRequest {
     pub container_port: u16,
 }
 
+/// Handles POST /apps
+///
+/// Launches a new container based on the provided configuration.
+///
+/// # Arguments
+/// - `payload`: JSON body containing app creation parameters.
+///
+/// # Returns
+/// - `201 Created` with container ID if successful.
+/// - `400 Bad Request` with error message if failed.
 pub async fn create_app(Json(payload): Json<CreateAppRequest>) -> impl IntoResponse {
     match launch_container(&payload.name, &payload.image, &payload.ports, payload.container_port) {
         Ok(container_id) => (
@@ -63,35 +78,57 @@ pub async fn create_app(Json(payload): Json<CreateAppRequest>) -> impl IntoRespo
                 "status": "error",
                 "message": e
             }))
-        )
+        ),
     }
 }
 
+/// Handles GET /apps
+///
+/// Lists running containers, paginated.
+///
+/// # Arguments
+/// - `pagination`: Query parameters `page` and `limit`.
+///
+/// # Returns
+/// - `200 OK` with paginated list of applications.
+/// - `500 Internal Server Error` if Docker command fails.
 pub async fn list_apps(Query(pagination): Query<Pagination>) -> (StatusCode, Json<PaginatedResponse<AppInstance>>) {
-    let page = pagination.page.unwrap_or(1);
-    let limit = pagination.limit.unwrap_or(10);
-    let all_apps = get_mock_apps();
-    let total = all_apps.len();
+    match get_running_containers() {
+        Ok(all_apps) => {
+            let page = pagination.page.unwrap_or(1);
+            let limit = pagination.limit.unwrap_or(10);
+            let total = all_apps.len();
 
-    let start = (page - 1).saturating_mul(limit);
-    let end = (start + limit).min(total);
-    
-    let items = if start >= total {
-        vec![]
-    } else {
-        all_apps[start..end].to_vec()
-    };
-    
-    let response = PaginatedResponse {
-        total,
-        page,
-        limit,
-        items,
-    };
+            let start = (page - 1).saturating_mul(limit);
+            let end = (start + limit).min(total);
+            let items = if start >= total { vec![] } else { all_apps[start..end].to_vec() };
 
-    (StatusCode::OK, Json(response))
+            let response = PaginatedResponse { total, page, limit, items };
+            (StatusCode::OK, Json(response))
+        }
+        Err(_) => {
+            let empty = PaginatedResponse {
+                total: 0,
+                page: 1,
+                limit: 10,
+                items: vec![],
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(empty))
+        }
+    }
 }
 
+
+/// Handles GET /apps/:id
+///
+/// Fetches an application by its local ID (mocked).
+///
+/// # Arguments
+/// - `id`: Application ID.
+///
+/// # Returns
+/// - `200 OK` with the application if found.
+/// - `404 Not Found` if not found.
 pub async fn get_app(Path(id): Path<u32>) -> (StatusCode, Json<Option<AppInstance>>) {
     let app = get_mock_apps().into_iter().find(|a| a.id == id);
 
@@ -101,6 +138,10 @@ pub async fn get_app(Path(id): Path<u32>) -> (StatusCode, Json<Option<AppInstanc
     }
 }
 
+/// Generates a mocked list of applications (for testing purposes).
+///
+/// # Returns
+/// - `Vec<AppInstance>` mocked apps with random statuses and ports.
 pub fn get_mock_apps() -> Vec<AppInstance> {
     let statuses = vec![
         AppStatus::Running,
