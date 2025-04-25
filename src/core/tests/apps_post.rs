@@ -1,8 +1,7 @@
-use crate::routes::test_app;
-
 use axum::{body::Body, http::{Request, StatusCode}};
-use tower::ServiceExt;
+use lightshuttle_core::app::build_router;
 use serde_json::json;
+use tower::ServiceExt;
 
 #[tokio::test]
 async fn post_apps_should_succeed() {
@@ -11,7 +10,7 @@ async fn post_apps_should_succeed() {
         return;
     }
 
-    let app = test_app();
+    let app = build_router();
 
     let payload = json!({
         "name": "test-nginx",
