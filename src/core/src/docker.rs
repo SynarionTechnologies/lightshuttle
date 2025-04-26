@@ -81,6 +81,60 @@ pub fn get_running_containers() -> Result<Vec<AppInstance>, String> {
     Ok(containers)
 }
 
+/// Retrieves information about a single container by its name.
+///
+/// # Arguments
+/// - `name`: The Docker container name.
+///
+/// # Returns
+/// - `Ok(Some(AppInstance))` if found
+/// - `Ok(None)` if not found
+/// - `Err(message)` if an error occurred
+pub fn get_container_by_name(name: &str) -> Result<Option<AppInstance>, String> {
+    let output = Command::new("docker")
+        .args(["inspect", name])
+        .output()
+        .map_err(|e| format!("Failed to execute docker inspect: {}", e))?;
+
+    if !output.status.success() {
+        return Ok(None);
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    let containers: Vec<serde_json::Value> = serde_json::from_str(&stdout)
+        .map_err(|e| format!("Failed to parse docker inspect output: {}", e))?;
+
+    if containers.is_empty() {
+        return Ok(None);
+    }
+
+    let container = &containers[0];
+    let name = container["Name"].as_str().unwrap_or_default().trim_start_matches('/').to_string();
+    let image = container["Config"]["Image"].as_str().unwrap_or_default().to_string();
+    let created_at = container["Created"].as_str().unwrap_or_default().to_string();
+
+    let ports = if let Some(ports) = container["NetworkSettings"]["Ports"].as_object() {
+        ports.keys()
+            .filter_map(|k| {
+                k.split('/').next()
+                    .and_then(|port| port.parse::<u16>().ok())
+            })
+            .collect()
+    } else {
+        vec![]
+    };
+
+    Ok(Some(AppInstance {
+        id: 0,
+        name,
+        status: AppStatus::Running,
+        image,
+        ports,
+        created_at,
+    }))
+}
+
 /// Parses the status string from `docker ps` into an `AppStatus`.
 ///
 /// # Arguments

@@ -12,7 +12,7 @@ use tower_http::cors::CorsLayer;
 /// # Routes
 /// - `GET /apps` — List running applications.
 /// - `POST /apps` — Create (launch) a new application.
-/// - `GET /apps/:id` — Get a single application by ID.
+/// - `GET /apps/:name` — Get a single application by his name.
 /// - `GET /health` — Healthcheck endpoint.
 /// - `GET /version` — Application version information.
 /// - `GET /metrics` — Prometheus-compatible metrics.
@@ -22,7 +22,7 @@ use tower_http::cors::CorsLayer;
 pub fn build_router() -> Router {
     Router::new()
         .route("/apps", get(list_apps).post(create_app))
-        .route("/apps/:id", get(get_app))
+        .route("/apps/:name", get(get_app))
         .route("/health", get(health))
         .route("/version", get(version))
         .route("/metrics", get(metrics))

@@ -51,29 +51,46 @@ async fn apps_pagination_overflow_returns_empty() {
 }
 
 #[tokio::test]
-async fn apps_get_by_id_works() {
+async fn get_existing_app_should_succeed() {
+    if std::env::var("DOCKER_TEST").is_err() {
+        eprintln!("⏭ Skipping test: set DOCKER_TEST=1 to run it");
+        return;
+    }
+
     let app = build_router();
+
     let response = app
-        .oneshot(Request::builder().uri("/apps/1").body(Body::empty()).unwrap())
+        .oneshot(Request::builder().uri("/apps/test-nginx").body(Body::empty()).unwrap())
         .await
         .unwrap();
 
-    assert_eq!(response.status(), StatusCode::OK);
+    let status = response.status();
+    let body_bytes = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let body: Value = serde_json::from_slice(&body_bytes).unwrap();
 
-    let body_bytes = response.into_body().collect().await.unwrap().to_bytes();
-    let json: Value = serde_json::from_slice(&body_bytes).unwrap();
+    println!("Status: {}", status);
+    println!("Body: {}", body);
 
-    assert_eq!(json["id"], 1);
-    assert_eq!(json["name"], "app-1");
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["name"], "test-nginx");
 }
 
 #[tokio::test]
-async fn apps_get_by_id_not_found() {
+async fn get_non_existing_app_should_return_404() {
+    if std::env::var("DOCKER_TEST").is_err() {
+        eprintln!("⏭ Skipping test: set DOCKER_TEST=1 to run it");
+        return;
+    }
+
     let app = build_router();
+
     let response = app
-        .oneshot(Request::builder().uri("/apps/9999").body(Body::empty()).unwrap())
+        .oneshot(Request::builder().uri("/apps/i-dont-exist").body(Body::empty()).unwrap())
         .await
         .unwrap();
 
-    assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    let status = response.status();
+    println!("Status: {}", status);
+
+    assert_eq!(status, StatusCode::NOT_FOUND);
 }

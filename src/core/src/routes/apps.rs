@@ -6,7 +6,7 @@ use axum::{
 
 use serde::{Deserialize, Serialize};
 
-use crate::docker::{get_running_containers, launch_container};
+use crate::docker::{get_container_by_name, get_running_containers, launch_container};
 
 /// Represents an application instance (a running Docker container).
 #[derive(Serialize, Deserialize, Clone)]
@@ -119,44 +119,21 @@ pub async fn list_apps(Query(pagination): Query<Pagination>) -> (StatusCode, Jso
 }
 
 
-/// Handles GET /apps/:id
+/// Retrieve a specific running app by its container name.
 ///
-/// Fetches an application by its local ID (mocked).
-///
-/// # Arguments
-/// - `id`: Application ID.
+/// # Path Parameters
+/// - `name`: The Docker container name.
 ///
 /// # Returns
-/// - `200 OK` with the application if found.
-/// - `404 Not Found` if not found.
-pub async fn get_app(Path(id): Path<u32>) -> (StatusCode, Json<Option<AppInstance>>) {
-    let app = get_mock_apps().into_iter().find(|a| a.id == id);
-
-    match app {
-        Some(app) => (StatusCode::OK, Json(Some(app))),
-        None => (StatusCode::NOT_FOUND, Json(None)),
+/// - `200 OK` with app details if found
+/// - `404 Not Found` if the app does not exist
+pub async fn get_app(Path(name): Path<String>) -> (StatusCode, Json<Option<AppInstance>>) {
+    match get_container_by_name(&name) {
+        Ok(Some(app)) => (StatusCode::OK, Json(Some(app))),
+        Ok(None) => (StatusCode::NOT_FOUND, Json(None)),
+        Err(_) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(None),
+        ),
     }
-}
-
-/// Generates a mocked list of applications (for testing purposes).
-///
-/// # Returns
-/// - `Vec<AppInstance>` mocked apps with random statuses and ports.
-pub fn get_mock_apps() -> Vec<AppInstance> {
-    let statuses = vec![
-        AppStatus::Running,
-        AppStatus::Stopped,
-        AppStatus::Error,
-    ];
-
-    (1..=50)
-        .map(|id| AppInstance {
-            id,
-            name: format!("app-{}", id),
-            status: statuses[(id as usize) % statuses.len()].clone(),
-            image: format!("image-{}:latest", id),
-            ports: vec![8000 + id as u16],
-            created_at: "2025-04-22T15:00:00Z".to_string(),
-        })
-        .collect()
 }
