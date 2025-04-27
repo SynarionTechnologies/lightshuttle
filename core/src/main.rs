@@ -7,7 +7,7 @@ use std::net::SocketAddr;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 /// Entry point for the LightShuttle Core server.
-/// 
+///
 /// Initializes logging, sets up the HTTP server and routes,
 /// then starts serving incoming requests.
 #[tokio::main]

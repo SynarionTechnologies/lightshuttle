@@ -1,6 +1,12 @@
-use axum::{body::Body, http::{Request, StatusCode}};
+use axum::{
+    body::Body,
+    http::{Request, StatusCode},
+};
 use http_body_util::BodyExt;
-use lightshuttle_core::{app::build_router, docker::{launch_container, remove_container}};
+use lightshuttle_core::{
+    app::build_router,
+    docker::{launch_container, remove_container},
+};
 use serde_json::Value;
 use tower::ServiceExt;
 
@@ -19,7 +25,12 @@ async fn apps_basic_returns_ok() {
 async fn apps_paginated_returns_data() {
     let app = build_router();
     let response = app
-        .oneshot(Request::builder().uri("/apps?page=1&limit=5").body(Body::empty()).unwrap())
+        .oneshot(
+            Request::builder()
+                .uri("/apps?page=1&limit=5")
+                .body(Body::empty())
+                .unwrap(),
+        )
         .await
         .unwrap();
 
@@ -33,12 +44,16 @@ async fn apps_paginated_returns_data() {
     assert!(json["items"].is_array());
 }
 
-
 #[tokio::test]
 async fn apps_pagination_overflow_returns_empty() {
     let app = build_router();
     let response = app
-        .oneshot(Request::builder().uri("/apps?page=1000&limit=10").body(Body::empty()).unwrap())
+        .oneshot(
+            Request::builder()
+                .uri("/apps?page=1000&limit=10")
+                .body(Body::empty())
+                .unwrap(),
+        )
         .await
         .unwrap();
 
@@ -66,7 +81,7 @@ async fn get_existing_app_should_succeed() {
     let response = app
         .oneshot(
             Request::builder()
-                .uri(&format!("/apps/{}", container_name))
+                .uri(format!("/apps/{}", container_name))
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -98,7 +113,12 @@ async fn get_non_existing_app_should_return_404() {
     let app = build_router();
 
     let response = app
-        .oneshot(Request::builder().uri("/apps/i-dont-exist").body(Body::empty()).unwrap())
+        .oneshot(
+            Request::builder()
+                .uri("/apps/i-dont-exist")
+                .body(Body::empty())
+                .unwrap(),
+        )
         .await
         .unwrap();
 

@@ -1,5 +1,5 @@
-use std::process::Command;
 use crate::routes::apps::{AppInstance, AppStatus};
+use std::process::Command;
 
 /// Launches a Docker container using the `docker` CLI.
 ///
@@ -48,7 +48,11 @@ pub fn launch_container(
 /// - `Err(message)` if the Docker command fails
 pub fn get_running_containers() -> Result<Vec<AppInstance>, String> {
     let output = Command::new("docker")
-        .args(["ps", "--format", "{{.ID}};{{.Names}};{{.Image}};{{.Status}};{{.Ports}}"])
+        .args([
+            "ps",
+            "--format",
+            "{{.ID}};{{.Names}};{{.Image}};{{.Status}};{{.Ports}}",
+        ])
         .output()
         .map_err(|e| format!("Failed to execute docker ps: {}", e))?;
 
@@ -110,14 +114,26 @@ pub fn get_container_by_name(name: &str) -> Result<Option<AppInstance>, String> 
     }
 
     let container = &containers[0];
-    let name = container["Name"].as_str().unwrap_or_default().trim_start_matches('/').to_string();
-    let image = container["Config"]["Image"].as_str().unwrap_or_default().to_string();
-    let created_at = container["Created"].as_str().unwrap_or_default().to_string();
+    let name = container["Name"]
+        .as_str()
+        .unwrap_or_default()
+        .trim_start_matches('/')
+        .to_string();
+    let image = container["Config"]["Image"]
+        .as_str()
+        .unwrap_or_default()
+        .to_string();
+    let created_at = container["Created"]
+        .as_str()
+        .unwrap_or_default()
+        .to_string();
 
     let ports = if let Some(ports) = container["NetworkSettings"]["Ports"].as_object() {
-        ports.keys()
+        ports
+            .keys()
             .filter_map(|k| {
-                k.split('/').next()
+                k.split('/')
+                    .next()
                     .and_then(|port| port.parse::<u16>().ok())
             })
             .collect()
@@ -136,10 +152,10 @@ pub fn get_container_by_name(name: &str) -> Result<Option<AppInstance>, String> 
 }
 
 /// Removes a Docker container by name.
-/// 
+///
 /// # Arguments
 /// - `name`: The container name to remove.
-/// 
+///
 /// # Returns
 /// - `Ok(())` if deleted successfully
 /// - `Err(message)` if failed
@@ -150,7 +166,7 @@ pub fn remove_container(name: &str) -> Result<(), String> {
         .map_err(|e| format!("Failed to execute docker rm: {}", e))?;
 
     let stderr = String::from_utf8_lossy(&output.stderr);
-    
+
     if stderr.contains("No such container") || stderr.contains("Error: No such container") {
         return Err("No such container".to_string());
     }

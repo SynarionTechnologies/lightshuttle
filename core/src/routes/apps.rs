@@ -64,20 +64,25 @@ pub struct CreateAppRequest {
 /// - `201 Created` with container ID if successful.
 /// - `400 Bad Request` with error message if failed.
 pub async fn create_app(Json(payload): Json<CreateAppRequest>) -> impl IntoResponse {
-    match launch_container(&payload.name, &payload.image, &payload.ports, payload.container_port) {
+    match launch_container(
+        &payload.name,
+        &payload.image,
+        &payload.ports,
+        payload.container_port,
+    ) {
         Ok(container_id) => (
             StatusCode::CREATED,
             Json(serde_json::json!({
                 "status": "success",
                 "container_id": container_id
-            }))
+            })),
         ),
         Err(e) => (
             StatusCode::BAD_REQUEST,
             Json(serde_json::json!({
                 "status": "error",
                 "message": e
-            }))
+            })),
         ),
     }
 }
@@ -92,7 +97,9 @@ pub async fn create_app(Json(payload): Json<CreateAppRequest>) -> impl IntoRespo
 /// # Returns
 /// - `200 OK` with paginated list of applications.
 /// - `500 Internal Server Error` if Docker command fails.
-pub async fn list_apps(Query(pagination): Query<Pagination>) -> (StatusCode, Json<PaginatedResponse<AppInstance>>) {
+pub async fn list_apps(
+    Query(pagination): Query<Pagination>,
+) -> (StatusCode, Json<PaginatedResponse<AppInstance>>) {
     match get_running_containers() {
         Ok(all_apps) => {
             let page = pagination.page.unwrap_or(1);
@@ -101,9 +108,18 @@ pub async fn list_apps(Query(pagination): Query<Pagination>) -> (StatusCode, Jso
 
             let start = (page - 1).saturating_mul(limit);
             let end = (start + limit).min(total);
-            let items = if start >= total { vec![] } else { all_apps[start..end].to_vec() };
+            let items = if start >= total {
+                vec![]
+            } else {
+                all_apps[start..end].to_vec()
+            };
 
-            let response = PaginatedResponse { total, page, limit, items };
+            let response = PaginatedResponse {
+                total,
+                page,
+                limit,
+                items,
+            };
             (StatusCode::OK, Json(response))
         }
         Err(_) => {
@@ -118,7 +134,6 @@ pub async fn list_apps(Query(pagination): Query<Pagination>) -> (StatusCode, Jso
     }
 }
 
-
 /// Retrieve a specific running app by its container name.
 ///
 /// # Path Parameters
@@ -131,10 +146,7 @@ pub async fn get_app(Path(name): Path<String>) -> (StatusCode, Json<Option<AppIn
     match get_container_by_name(&name) {
         Ok(Some(app)) => (StatusCode::OK, Json(Some(app))),
         Ok(None) => (StatusCode::NOT_FOUND, Json(None)),
-        Err(_) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(None),
-        ),
+        Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, Json(None)),
     }
 }
 
