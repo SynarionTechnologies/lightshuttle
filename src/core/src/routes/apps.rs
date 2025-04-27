@@ -137,3 +137,20 @@ pub async fn get_app(Path(name): Path<String>) -> (StatusCode, Json<Option<AppIn
         ),
     }
 }
+
+/// Deletes an application/container by its name.
+///
+/// # Arguments
+/// - `name`: The container name to delete.
+///
+/// # Returns
+/// - `204 No Content` if deleted successfully
+/// - `404 Not Found` if container doesn't exist
+/// - `500 Internal Server Error` if something went wrong
+pub async fn delete_app(Path(name): Path<String>) -> impl IntoResponse {
+    match crate::docker::remove_container(&name) {
+        Ok(_) => StatusCode::NO_CONTENT,
+        Err(e) if e.contains("No such container") => StatusCode::NOT_FOUND,
+        Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
+    }
+}
