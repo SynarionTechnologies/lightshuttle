@@ -135,6 +135,33 @@ pub fn get_container_by_name(name: &str) -> Result<Option<AppInstance>, String> 
     }))
 }
 
+/// Removes a Docker container by name.
+/// 
+/// # Arguments
+/// - `name`: The container name to remove.
+/// 
+/// # Returns
+/// - `Ok(())` if deleted successfully
+/// - `Err(message)` if failed
+pub fn remove_container(name: &str) -> Result<(), String> {
+    let output = std::process::Command::new("docker")
+        .args(["rm", "-f", name])
+        .output()
+        .map_err(|e| format!("Failed to execute docker rm: {}", e))?;
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    
+    if stderr.contains("No such container") || stderr.contains("Error: No such container") {
+        return Err("No such container".to_string());
+    }
+
+    if output.status.success() {
+        Ok(())
+    } else {
+        Err(stderr.trim().to_string())
+    }
+}
+
 /// Parses the status string from `docker ps` into an `AppStatus`.
 ///
 /// # Arguments
