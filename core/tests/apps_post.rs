@@ -38,7 +38,9 @@ async fn post_apps_should_succeed() {
 
     let response = app.oneshot(request).await.unwrap();
     let status = response.status();
-    let body_bytes = body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let body_bytes = body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
     let body = String::from_utf8_lossy(&body_bytes);
 
     println!("Status: {}", status);

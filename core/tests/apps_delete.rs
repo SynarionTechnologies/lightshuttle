@@ -1,5 +1,11 @@
-use axum::{body::Body, http::{Request, StatusCode}};
-use lightshuttle_core::{app::build_router, docker::{launch_container, remove_container}};
+use axum::{
+    body::Body,
+    http::{Request, StatusCode},
+};
+use lightshuttle_core::{
+    app::build_router,
+    docker::{launch_container, remove_container},
+};
 use tower::ServiceExt;
 
 #[tokio::test]
@@ -19,7 +25,7 @@ async fn delete_existing_app_should_succeed() {
         .oneshot(
             Request::builder()
                 .method("DELETE")
-                .uri(&format!("/apps/{}", container_name))
+                .uri(format!("/apps/{}", container_name))
                 .body(Body::empty())
                 .unwrap(),
         )
