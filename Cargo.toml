@@ -1,7 +1,7 @@
 [workspace]
 members = [
-    "src/core",
-    "src/cli",
-    "src/dashboard"
+    "core",
+    "cli",
+    "dashboard"
 ]
 resolver = "2"
