@@ -1,6 +1,6 @@
 use axum::{body::Body, http::{Request, StatusCode}};
 use http_body_util::BodyExt;
-use lightshuttle_core::app::build_router;
+use lightshuttle_core::{app::build_router, docker::{launch_container, remove_container}};
 use serde_json::Value;
 use tower::ServiceExt;
 
@@ -57,22 +57,35 @@ async fn get_existing_app_should_succeed() {
         return;
     }
 
-    let app = build_router();
+    let container_name = "test-nginx-lightshuttle";
+    let _ = remove_container(container_name);
+    launch_container(container_name, "nginx:latest", &[8080], 80)
+        .expect("Failed to launch test container");
 
+    let app = build_router();
     let response = app
-        .oneshot(Request::builder().uri("/apps/test-nginx").body(Body::empty()).unwrap())
+        .oneshot(
+            Request::builder()
+                .uri(&format!("/apps/{}", container_name))
+                .body(Body::empty())
+                .unwrap(),
+        )
         .await
         .unwrap();
 
     let status = response.status();
-    let body_bytes = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let body_bytes = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
     let body: Value = serde_json::from_slice(&body_bytes).unwrap();
 
     println!("Status: {}", status);
     println!("Body: {}", body);
 
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(body["name"], "test-nginx");
+    assert_eq!(body["name"], container_name);
+
+    remove_container(container_name).expect("Failed to remove test container");
 }
 
 #[tokio::test]

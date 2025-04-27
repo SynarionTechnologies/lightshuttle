@@ -1,5 +1,5 @@
 use crate::routes::{
-    apps::{create_app, get_app, list_apps},
+    apps::{create_app, delete_app, get_app, list_apps},
     health, metrics, version,
 };
 use axum::{routing::get, Router};
@@ -22,7 +22,7 @@ use tower_http::cors::CorsLayer;
 pub fn build_router() -> Router {
     Router::new()
         .route("/apps", get(list_apps).post(create_app))
-        .route("/apps/:name", get(get_app))
+        .route("/apps/:name", get(get_app).delete(delete_app))
         .route("/health", get(health))
         .route("/version", get(version))
         .route("/metrics", get(metrics))
