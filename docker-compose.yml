@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  lightshuttle:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${BIND_ADDRESS_PORT:-7878}:7878"
+    environment:
+      - BIND_ADDRESS=0.0.0.0:7878
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped

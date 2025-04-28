@@ -12,7 +12,8 @@ use tower_http::cors::CorsLayer;
 /// # Routes
 /// - `GET /apps` — List running applications.
 /// - `POST /apps` — Create (launch) a new application.
-/// - `GET /apps/:name` — Get a single application by his name.
+/// - `GET /apps/:name` — Get a single application by its name.
+/// - `GET /apps/:name/logs` — Get logs for a specific application.
 /// - `GET /health` — Healthcheck endpoint.
 /// - `GET /version` — Application version information.
 /// - `GET /metrics` — Prometheus-compatible metrics.
