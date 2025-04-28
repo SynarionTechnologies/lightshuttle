@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "daemon",
+    "cli",
+    "dashboard"
+]
+resolver = "2"
