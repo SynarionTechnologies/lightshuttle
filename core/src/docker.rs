@@ -178,6 +178,33 @@ pub fn remove_container(name: &str) -> Result<(), String> {
     }
 }
 
+/// Fetch the logs of a container using `docker logs`.
+///
+/// # Arguments
+/// - `name`: Container name.
+///
+/// # Returns
+/// - `Ok(logs)` if successful.
+/// - `Err(message)` if failed.
+pub fn get_container_logs(name: &str) -> Result<String, String> {
+    let output = Command::new("docker")
+        .args(["logs", name])
+        .output()
+        .map_err(|e| format!("Failed to execute docker logs: {}", e))?;
+
+    if output.status.success() {
+        let logs = String::from_utf8_lossy(&output.stdout).to_string();
+        Ok(logs)
+    } else {
+        let stderr = String::from_utf8_lossy(&output.stderr).to_lowercase();
+        if stderr.contains("no such container") {
+            Err("No such container".to_string())
+        } else {
+            Err(stderr.trim().to_string())
+        }
+    }
+}
+
 /// Parses the status string from `docker ps` into an `AppStatus`.
 ///
 /// # Arguments
