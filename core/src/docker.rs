@@ -208,7 +208,7 @@ fn parse_ports(ports_info: &str) -> Vec<u16> {
         .filter_map(|entry| {
             let parts: Vec<&str> = entry.trim().split("->").collect();
             if !parts.is_empty() {
-                if let Some(port_part) = parts[0].split(':').last() {
+                if let Some(port_part) = parts[0].split(':').next_back() {
                     return port_part.parse::<u16>().ok();
                 }
             }
