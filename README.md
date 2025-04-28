@@ -1,92 +1,100 @@
 # LightShuttle
 
-> Ultra-fast and developer-friendly orchestrator for containerized applications. Built in Rust.
-
-LightShuttle is a next-generation orchestrator designed to simplify how developers deploy, debug, and manage containerized applications — without the bloat.
-
-## 🚀 Why LightShuttle?
-
-- ⚡️ Blazing fast (written in Rust)
-- 🧠 Developer-first UX (CLI + Dashboard)
-- 🧰 Simple deployment, clean logs, instant debug
-- 🔌 API-first architecture
-- 📦 Lightweight by design
+🚀 LightShuttle is a lightweight, fast, and self-hostable orchestrator for containerized applications, designed as a simple alternative to Kubernetes.
 
 ---
 
-## 📦 Project Structure
+## Features
 
-This repository is a [Rust workspace](https://doc.rust-lang.org/book/ch14-03-cargo-workspaces.html) containing multiple components of the LightShuttle ecosystem:
-
-```bash
-lightshuttle/
-├── core/         # The orchestrator engine (API + runtime)
-├── cli/          # Command-line interface to control the orchestrator
-├── dashboard/    # Web-based UI
-```
+- ⚡ Ultra-fast API based on [Axum](https://github.com/tokio-rs/axum)
+- 🐳 Direct control over Docker CLI (no daemon inside)
+- 🔥 Open-source, fully self-hostable
+- 🛠 Simple REST API (no GraphQL)
+- 📈 Metrics ready for Prometheus
+- 🧹 Designed for developers: deploy faster, debug easier
 
 ---
 
-## 🛠️ Getting Started
+## Architecture
 
-### Prerequisites
+- **Daemon** (`daemon/`): the core server handling API requests and container orchestration
+- **CLI** (`cli/`): command-line tool (WIP)
+- **Dashboard** (`dashboard/`): web UI (planned)
 
-- [Rust](https://rust-lang.org/tools/install) (>= 1.75)
-- [Docker](https://www.docker.com/) (for development/testing)
+---
 
-### Clone
+## Requirements
+
+- Rust (>= 1.76)
+- Docker installed and accessible (`docker` CLI must work)
+- Linux recommended (tested on Debian 12)
+
+---
+
+## Local development
 
 ```bash
+# Clone the repo
 git clone https://github.com/LightShuttle/lightshuttle.git
 cd lightshuttle
+
+# Install dependencies
+cargo install cargo-make
+
+# Build and test
+make
 ```
 
-### Build
-```bash
-cargo build --workspace
-```
+---
 
-### Run the orchestrator
-
-```bash
-cargo run -p lightshuttle_core
-```
-
-### Use the CLI
+## Running the Daemon
 
 ```bash
-cargo run -p lightshuttle_cli -- help
+# Build
+make
+
+# Launch
+cargo run --bin lightshuttle_core
 ```
 
----
+By default, the API will be available on [http://127.0.0.1:7878](http://127.0.0.1:7878).
 
-## 🧪 Tests
+You can override the default address by setting the `BIND_ADDRESS` environment variable:
 
 ```bash
-cargo test --workspace
+BIND_ADDRESS=0.0.0.0:7878 cargo run --bin lightshuttle_core
 ```
 
 ---
 
-## 🌐 Dashboard
+## Roadmap
 
-The dashboard is not yet implemented — but will eventually allow you to:
-
-- Visualize deployments and services
-- Inspect logs and metrics
-- Trigger builds and rollbacks
-- Monitor system health
-
----
-
-## 📄 License
-
-Licensed under the [AGPL-3.0 license](LICENSE).
+- [x] Basic container lifecycle (create, list, delete, logs)
+- [ ] Start/Stop containers
+- [ ] Search containers
+- [ ] Labels support
+- [ ] Update/Recreate containers
+- [ ] Full error refinement
+- [ ] CLI client (`lightshuttle-cli`)
+- [ ] Dashboard web UI
+- [ ] Authentication & RBAC
+- [ ] Templates system (Helm-light)
 
 ---
 
-## 🙌 Contributing
+## License
 
-Coming soon. Stay tuned.
+LightShuttle is licensed under the GNU Affero General Public License v3.0 (AGPLv3).  
+See [LICENSE](LICENSE) for more details.
 
 ---
+
+## Website
+
+Official website: [https://www.getlightshuttle.com](https://www.getlightshuttle.com)
+
+---
+
+## Credits
+
+Developed by **Pierrick FONQUERNE**.

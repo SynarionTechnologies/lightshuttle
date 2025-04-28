@@ -1,5 +1,8 @@
-use crate::routes::apps::{AppInstance, AppStatus};
 use std::process::Command;
+
+use crate::errors::Error;
+
+use super::models::{AppInstance, AppStatus};
 
 /// Launches a Docker container using the `docker` CLI.
 ///
@@ -11,13 +14,13 @@ use std::process::Command;
 ///
 /// # Returns
 /// - `Ok(container_id)` on success
-/// - `Err(message)` on failure
+/// - `Err(Error)` on failure
 pub fn launch_container(
     name: &str,
     image: &str,
     host_ports: &[u16],
     container_port: u16,
-) -> Result<String, String> {
+) -> Result<String, Error> {
     let port_args: Vec<String> = host_ports
         .iter()
         .flat_map(|host| vec!["-p".to_string(), format!("{host}:{container_port}")])
@@ -30,14 +33,14 @@ pub fn launch_container(
     let output = Command::new("docker")
         .args(&args)
         .output()
-        .map_err(|e| format!("Failed to execute docker command: {}", e))?;
+        .map_err(|_| Error::DockerCommandFailed)?;
 
     if output.status.success() {
         let container_id = String::from_utf8_lossy(&output.stdout).trim().to_string();
         Ok(container_id)
     } else {
-        let err = String::from_utf8_lossy(&output.stderr).to_string();
-        Err(format!("Docker error: {}", err.trim()))
+        let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+        Err(Error::Unexpected(stderr.trim().to_string()))
     }
 }
 
@@ -45,8 +48,8 @@ pub fn launch_container(
 ///
 /// # Returns
 /// - `Ok(Vec<AppInstance>)` containing all running containers
-/// - `Err(message)` if the Docker command fails
-pub fn get_running_containers() -> Result<Vec<AppInstance>, String> {
+/// - `Err(Error)` if the Docker command fails
+pub fn get_running_containers() -> Result<Vec<AppInstance>, Error> {
     let output = Command::new("docker")
         .args([
             "ps",
@@ -54,11 +57,10 @@ pub fn get_running_containers() -> Result<Vec<AppInstance>, String> {
             "{{.ID}};{{.Names}};{{.Image}};{{.Status}};{{.Ports}}",
         ])
         .output()
-        .map_err(|e| format!("Failed to execute docker ps: {}", e))?;
+        .map_err(|_| Error::DockerCommandFailed)?;
 
     if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("Docker error: {}", stderr.trim()));
+        return Err(Error::DockerCommandFailed);
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
@@ -72,12 +74,12 @@ pub fn get_running_containers() -> Result<Vec<AppInstance>, String> {
             }
 
             Some(AppInstance {
-                id: idx as u32 + 1, // Locally assigned ID (not Docker ID)
+                id: idx as u32 + 1,
                 name: parts[1].to_string(),
                 image: parts[2].to_string(),
                 status: parse_status(parts[3]),
                 ports: parse_ports(parts[4]),
-                created_at: "".to_string(), // Creation date not available from `docker ps`
+                created_at: "".to_string(),
             })
         })
         .collect();
@@ -93,12 +95,12 @@ pub fn get_running_containers() -> Result<Vec<AppInstance>, String> {
 /// # Returns
 /// - `Ok(Some(AppInstance))` if found
 /// - `Ok(None)` if not found
-/// - `Err(message)` if an error occurred
-pub fn get_container_by_name(name: &str) -> Result<Option<AppInstance>, String> {
+/// - `Err(Error)` if an error occurred
+pub fn get_container_by_name(name: &str) -> Result<Option<AppInstance>, Error> {
     let output = Command::new("docker")
         .args(["inspect", name])
         .output()
-        .map_err(|e| format!("Failed to execute docker inspect: {}", e))?;
+        .map_err(|_| Error::DockerCommandFailed)?;
 
     if !output.status.success() {
         return Ok(None);
@@ -106,8 +108,8 @@ pub fn get_container_by_name(name: &str) -> Result<Option<AppInstance>, String> 
 
     let stdout = String::from_utf8_lossy(&output.stdout);
 
-    let containers: Vec<serde_json::Value> = serde_json::from_str(&stdout)
-        .map_err(|e| format!("Failed to parse docker inspect output: {}", e))?;
+    let containers: Vec<serde_json::Value> =
+        serde_json::from_str(&stdout).map_err(|e| Error::DockerOutputParse(e.to_string()))?;
 
     if containers.is_empty() {
         return Ok(None);
@@ -158,23 +160,23 @@ pub fn get_container_by_name(name: &str) -> Result<Option<AppInstance>, String> 
 ///
 /// # Returns
 /// - `Ok(())` if deleted successfully
-/// - `Err(message)` if failed
-pub fn remove_container(name: &str) -> Result<(), String> {
-    let output = std::process::Command::new("docker")
+/// - `Err(Error)` if failed
+pub fn remove_container(name: &str) -> Result<(), Error> {
+    let output = Command::new("docker")
         .args(["rm", "-f", name])
         .output()
-        .map_err(|e| format!("Failed to execute docker rm: {}", e))?;
+        .map_err(|_| Error::DockerCommandFailed)?;
 
     let stderr = String::from_utf8_lossy(&output.stderr);
 
     if stderr.contains("No such container") || stderr.contains("Error: No such container") {
-        return Err("No such container".to_string());
+        return Err(Error::ContainerNotFound);
     }
 
     if output.status.success() {
         Ok(())
     } else {
-        Err(stderr.trim().to_string())
+        Err(Error::Unexpected(stderr.trim().to_string()))
     }
 }
 
@@ -185,12 +187,12 @@ pub fn remove_container(name: &str) -> Result<(), String> {
 ///
 /// # Returns
 /// - `Ok(logs)` if successful.
-/// - `Err(message)` if failed.
-pub fn get_container_logs(name: &str) -> Result<String, String> {
+/// - `Err(Error)` if failed.
+pub fn get_container_logs(name: &str) -> Result<String, Error> {
     let output = Command::new("docker")
         .args(["logs", name])
         .output()
-        .map_err(|e| format!("Failed to execute docker logs: {}", e))?;
+        .map_err(|_| Error::DockerCommandFailed)?;
 
     if output.status.success() {
         let logs = String::from_utf8_lossy(&output.stdout).to_string();
@@ -198,20 +200,14 @@ pub fn get_container_logs(name: &str) -> Result<String, String> {
     } else {
         let stderr = String::from_utf8_lossy(&output.stderr).to_lowercase();
         if stderr.contains("no such container") {
-            Err("No such container".to_string())
+            Err(Error::ContainerNotFound)
         } else {
-            Err(stderr.trim().to_string())
+            Err(Error::Unexpected(stderr.trim().to_string()))
         }
     }
 }
 
 /// Parses the status string from `docker ps` into an `AppStatus`.
-///
-/// # Arguments
-/// - `status`: Raw status string (e.g., "Up 5 minutes" or "Exited (0) 2 hours ago")
-///
-/// # Returns
-/// - `AppStatus::Running`, `Stopped`, or `Error`
 fn parse_status(status: &str) -> AppStatus {
     if status.contains("Up") {
         AppStatus::Running
@@ -223,12 +219,6 @@ fn parse_status(status: &str) -> AppStatus {
 }
 
 /// Parses the ports string from `docker ps` into a list of `u16` host ports.
-///
-/// # Arguments
-/// - `ports_info`: Raw ports string (e.g., "0.0.0.0:8080->80/tcp, :::8080->80/tcp")
-///
-/// # Returns
-/// - `Vec<u16>` list of exposed host ports
 fn parse_ports(ports_info: &str) -> Vec<u16> {
     ports_info
         .split(',')
