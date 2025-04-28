@@ -150,6 +150,40 @@ pub async fn get_app(Path(name): Path<String>) -> (StatusCode, Json<Option<AppIn
     }
 }
 
+/// Retrieve the logs of a running container.
+///
+/// # Path Parameters
+/// - `name`: The Docker container name.
+///
+/// # Returns
+/// - `200 OK` with the logs as plain text.
+/// - `404 Not Found` if the container does not exist.
+/// - `500 Internal Server Error` if fetching logs fails.
+pub async fn get_app_logs(Path(name): Path<String>) -> impl IntoResponse {
+    match crate::docker::get_container_logs(&name) {
+        Ok(logs) => (
+            StatusCode::OK,
+            [(axum::http::header::CONTENT_TYPE, "text/plain")],
+            logs,
+        ),
+        Err(err_msg) => {
+            if err_msg.contains("No such container") {
+                (
+                    StatusCode::NOT_FOUND,
+                    [(axum::http::header::CONTENT_TYPE, "text/plain")],
+                    String::new(),
+                )
+            } else {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    [(axum::http::header::CONTENT_TYPE, "text/plain")],
+                    String::new(),
+                )
+            }
+        }
+    }
+}
+
 /// Deletes an application/container by its name.
 ///
 /// # Arguments

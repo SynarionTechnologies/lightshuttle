@@ -1,5 +1,5 @@
 use axum::{
-    body::Body,
+    body::{self, Body},
     http::{Request, StatusCode},
 };
 use http_body_util::BodyExt;
@@ -126,4 +126,38 @@ async fn get_non_existing_app_should_return_404() {
     println!("Status: {}", status);
 
     assert_eq!(status, StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
+async fn get_logs_should_succeed() {
+    if std::env::var("DOCKER_TEST").is_err() {
+        eprintln!("⏭️ Skipping test: set DOCKER_TEST=1 to run it");
+        return;
+    }
+
+    let container_name = "test-logs-lightshuttle";
+    let _ = launch_container(container_name, "nginx:latest", &[8081], 80);
+
+    let app = build_router();
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri(format!("/apps/{}/logs", container_name))
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let body_str = String::from_utf8_lossy(&body);
+
+    println!("Logs:\n{}", body_str);
+    assert!(body_str.contains("nginx"));
+
+    let _ = remove_container(container_name);
 }
