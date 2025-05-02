@@ -90,16 +90,27 @@ pub async fn stop_app(Path(name): Path<String>) -> Result<impl IntoResponse, Err
 pub async fn list_apps(Query(pagination): Query<Pagination>) -> Result<impl IntoResponse, Error> {
     let all_apps = docker::get_running_containers()?;
 
+    let filtered: Vec<_> = match &pagination.search {
+        Some(query) => {
+            let q = query.to_lowercase();
+            all_apps
+                .into_iter()
+                .filter(|app| app.name.to_lowercase().contains(&q))
+                .collect()
+        }
+        None => all_apps,
+    };
+
     let page = pagination.page.unwrap_or(1);
     let limit = pagination.limit.unwrap_or(10);
-    let total = all_apps.len();
+    let total = filtered.len();
 
     let start = (page - 1).saturating_mul(limit);
     let end = (start + limit).min(total);
     let items = if start >= total {
         vec![]
     } else {
-        all_apps[start..end].to_vec()
+        filtered[start..end].to_vec()
     };
 
     let response = PaginatedResponse {

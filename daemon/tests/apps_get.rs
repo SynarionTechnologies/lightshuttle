@@ -45,6 +45,43 @@ async fn apps_paginated_returns_data() {
 }
 
 #[tokio::test]
+async fn apps_search_filter_should_return_matching_container() {
+    if std::env::var("DOCKER_TEST").is_err() {
+        eprintln!("⏭ Skipping test: set DOCKER_TEST=1 to run it");
+        return;
+    }
+
+    let container_name = "lightshuttle-test-search-nginx";
+    let _ = remove_container(container_name);
+    create_and_run_container(container_name, "nginx:latest", &[8085], 80)
+        .expect("Failed to launch test container");
+
+    let app = build_router();
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/apps?search=search-nginx")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body_bytes = response.into_body().collect().await.unwrap().to_bytes();
+    let json: Value = serde_json::from_slice(&body_bytes).unwrap();
+
+    let items = json["items"].as_array().unwrap();
+    assert!(
+        items.iter().any(|item| item["name"] == container_name),
+        "Container not found in filtered results"
+    );
+
+    remove_container(container_name).expect("Failed to clean up container");
+}
+
+#[tokio::test]
 async fn apps_pagination_overflow_returns_empty() {
     let app = build_router();
     let response = app

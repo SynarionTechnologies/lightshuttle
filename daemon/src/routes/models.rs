@@ -14,6 +14,7 @@ pub struct CreateAppRequest {
 pub struct Pagination {
     pub page: Option<usize>,
     pub limit: Option<usize>,
+    pub search: Option<String>,
 }
 
 /// Standard response format for paginated lists.
