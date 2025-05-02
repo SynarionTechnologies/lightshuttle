@@ -1,4 +1,4 @@
-use std::process::Command;
+use std::{collections::HashMap, process::Command};
 
 use crate::errors::Error;
 
@@ -11,6 +11,7 @@ use super::models::{AppInstance, AppStatus};
 /// - `image`: Docker image to run (e.g., `nginx:latest`)
 /// - `host_ports`: List of ports to expose (host:container binding)
 /// - `container_port`: Internal port exposed by the container (e.g., 80 for nginx)
+/// - `labels`: Optional labels to assign to the container
 ///
 /// # Returns
 /// - `Ok(container_id)` on success
@@ -20,14 +21,22 @@ pub fn create_and_run_container(
     image: &str,
     host_ports: &[u16],
     container_port: u16,
+    labels: Option<&HashMap<String, String>>,
 ) -> Result<String, Error> {
     let port_args: Vec<String> = host_ports
         .iter()
         .flat_map(|host| vec!["-p".to_string(), format!("{host}:{container_port}")])
         .collect();
 
+    let label_args: Vec<String> = labels
+        .unwrap_or(&HashMap::new())
+        .iter()
+        .flat_map(|(k, v)| vec!["--label".to_string(), format!("{k}={v}")])
+        .collect();
+
     let mut args = vec!["run", "-d", "--rm", "--name", name];
     args.extend(port_args.iter().map(|s| s.as_str()));
+    args.extend(label_args.iter().map(|s| s.as_str()));
     args.push(image);
 
     let output = Command::new("docker")
