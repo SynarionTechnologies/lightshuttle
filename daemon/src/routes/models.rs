@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 
 /// Request payload for creating a new application/container.
@@ -7,6 +9,7 @@ pub struct CreateAppRequest {
     pub image: String,
     pub ports: Vec<u16>,
     pub container_port: u16,
+    pub labels: Option<HashMap<String, String>>,
 }
 
 /// Pagination parameters for listing applications.
