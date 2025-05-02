@@ -4,7 +4,7 @@ use axum::{
 };
 use lightshuttle_core::{
     app::build_router,
-    docker::{launch_container, remove_container},
+    docker::{create_and_run_container, remove_container},
 };
 use tower::ServiceExt;
 
@@ -17,8 +17,16 @@ async fn delete_existing_app_should_succeed() {
 
     let container_name = "test-delete-lightshuttle";
     let _ = remove_container(container_name);
-    launch_container(container_name, "nginx:latest", &[8088], 80)
-        .expect("Failed to launch container");
+    create_and_run_container(
+        container_name,
+        "nginx:latest",
+        &[8088],
+        80,
+        None,
+        None,
+        None,
+    )
+    .expect("Failed to launch container");
 
     let app = build_router();
     let response = app
