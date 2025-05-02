@@ -22,6 +22,7 @@ pub fn create_and_run_container(
     host_ports: &[u16],
     container_port: u16,
     labels: Option<&HashMap<String, String>>,
+    env: Option<&HashMap<String, String>>,
 ) -> Result<String, Error> {
     let port_args: Vec<String> = host_ports
         .iter()
@@ -34,9 +35,16 @@ pub fn create_and_run_container(
         .flat_map(|(k, v)| vec!["--label".to_string(), format!("{k}={v}")])
         .collect();
 
+    let env_args: Vec<String> = env
+        .unwrap_or(&HashMap::new())
+        .iter()
+        .flat_map(|(k, v)| vec!["-e".to_string(), format!("{k}={v}")])
+        .collect();
+
     let mut args = vec!["run", "-d", "--rm", "--name", name];
     args.extend(port_args.iter().map(|s| s.as_str()));
     args.extend(label_args.iter().map(|s| s.as_str()));
+    args.extend(env_args.iter().map(|s| s.as_str()));
     args.push(image);
 
     let output = Command::new("docker")
@@ -161,9 +169,28 @@ pub fn recreate_container(name: &str) -> Result<String, Error> {
             .collect::<std::collections::HashMap<String, String>>()
     });
 
+    let env_vars = cfg["Config"]["Env"].as_array().map(|vars| {
+        vars.iter()
+            .filter_map(|v| v.as_str())
+            .filter_map(|kv| {
+                let mut split = kv.splitn(2, '=');
+                let k = split.next()?;
+                let v = split.next().unwrap_or("");
+                Some((k.to_string(), v.to_string()))
+            })
+            .collect::<std::collections::HashMap<String, String>>()
+    });
+
     super::remove_container(name)?;
 
-    super::create_and_run_container(name, image, &host_ports, container_port, labels.as_ref())
+    super::create_and_run_container(
+        name,
+        image,
+        &host_ports,
+        container_port,
+        labels.as_ref(),
+        env_vars.as_ref(),
+    )
 }
 
 /// Lists running Docker containers using `docker ps`.

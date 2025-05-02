@@ -10,6 +10,7 @@ pub struct CreateAppRequest {
     pub ports: Vec<u16>,
     pub container_port: u16,
     pub labels: Option<HashMap<String, String>>,
+    pub env: Option<HashMap<String, String>>,
 }
 
 /// Pagination parameters for listing applications.

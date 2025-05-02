@@ -17,7 +17,7 @@ async fn delete_existing_app_should_succeed() {
 
     let container_name = "test-delete-lightshuttle";
     let _ = remove_container(container_name);
-    create_and_run_container(container_name, "nginx:latest", &[8088], 80, None)
+    create_and_run_container(container_name, "nginx:latest", &[8088], 80, None, None)
         .expect("Failed to launch container");
 
     let app = build_router();

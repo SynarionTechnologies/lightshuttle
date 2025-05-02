@@ -216,7 +216,7 @@ async fn post_apps_name_recreate_should_restart_container() {
     let name = "test-recreate-nginx";
     let _ = remove_container(name);
 
-    create_and_run_container(name, "nginx:latest", &[8087], 80, None)
+    create_and_run_container(name, "nginx:latest", &[8087], 80, None, None)
         .expect("Failed to create original container");
 
     let app = build_router();
@@ -292,4 +292,46 @@ async fn post_apps_should_support_labels() {
     assert_eq!(labels["env"], "test");
 
     let _ = remove_container(container_name);
+}
+
+#[tokio::test]
+async fn post_apps_should_set_environment_variables() {
+    if std::env::var("DOCKER_TEST").is_err() {
+        eprintln!("⏭️ Skipping Docker test (DOCKER_TEST not set)");
+        return;
+    }
+
+    let name = "test-env-nginx";
+    let _ = remove_container(name);
+
+    let payload = json!({
+        "name": name,
+        "image": "nginx:latest",
+        "ports": [8088],
+        "container_port": 80,
+        "env": {
+            "FOO": "bar",
+            "LIGHTSHUTTLE": "true"
+        }
+    });
+
+    let app = build_router();
+    let request = Request::builder()
+        .method("POST")
+        .uri("/apps")
+        .header("Content-Type", "application/json")
+        .body(Body::from(payload.to_string()))
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    let output = std::process::Command::new("docker")
+        .args(["exec", name, "printenv", "FOO"])
+        .output()
+        .expect("Failed to exec into container");
+
+    assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), "bar");
+
+    let _ = remove_container(name);
 }
