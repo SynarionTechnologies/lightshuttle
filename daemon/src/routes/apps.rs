@@ -191,6 +191,34 @@ pub async fn get_app_logs(Path(name): Path<String>) -> Result<Response, Error> {
     }
 }
 
+/// Handles GET /apps/:name/status
+///
+/// Returns the status of a container (`running`, `exited`, etc.)
+///
+/// # Returns
+/// - `200 OK` with JSON { status }
+/// - `404 Not Found` if the container doesn't exist
+/// - `500 Internal Server Error` on error
+pub async fn get_app_status(Path(name): Path<String>) -> Result<impl IntoResponse, Error> {
+    match container::get_container_status(&name) {
+        Ok(state) => Ok((StatusCode::OK, Json(serde_json::json!({ "status": state })))),
+        Err(Error::ContainerNotFound) => Ok((
+            StatusCode::NOT_FOUND,
+            Json(serde_json::json!({
+                "status": "error",
+                "message": "Container not found"
+            })),
+        )),
+        Err(_) => Ok((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({
+                "status": "error",
+                "message": "Failed to fetch container status"
+            })),
+        )),
+    }
+}
+
 /// Deletes an application/container by its name.
 ///
 /// # Arguments
