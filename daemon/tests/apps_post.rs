@@ -3,8 +3,12 @@ use axum::{
     body::Body,
     http::{Request, StatusCode},
 };
-use lightshuttle_core::{app::build_router, docker::remove_container};
-use serde_json::json;
+use http_body_util::BodyExt;
+use lightshuttle_core::{
+    app::build_router,
+    docker::{create_and_run_container, remove_container},
+};
+use serde_json::{json, Value};
 use tower::ServiceExt;
 
 #[tokio::test]
@@ -140,7 +144,6 @@ async fn post_apps_name_stop_should_succeed() {
         .args(["rm", "-f", container_name])
         .output();
 
-    // Create and start the container
     let _ = std::process::Command::new("docker")
         .args([
             "run",
@@ -201,6 +204,41 @@ async fn post_apps_name_stop_should_404_on_missing_container() {
     println!("Status: {}", status);
 
     assert_eq!(status, StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
+async fn post_apps_name_recreate_should_restart_container() {
+    if std::env::var("DOCKER_TEST").is_err() {
+        eprintln!("⏭️ Skipping test: set DOCKER_TEST=1 to run it");
+        return;
+    }
+
+    let name = "test-recreate-nginx";
+    let _ = remove_container(name);
+
+    create_and_run_container(name, "nginx:latest", &[8087], 80, None)
+        .expect("Failed to create original container");
+
+    let app = build_router();
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri(format!("/apps/{}/recreate", name))
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    let json: Value = serde_json::from_slice(&bytes).unwrap();
+
+    assert!(json["container_id"].as_str().unwrap().is_empty());
+
+    let _ = remove_container(name);
 }
 
 #[tokio::test]
