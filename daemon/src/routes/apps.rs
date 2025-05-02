@@ -5,7 +5,7 @@ use axum::{
 };
 
 use crate::{
-    docker::{self, AppInstance},
+    docker::{self, container, AppInstance},
     errors::Error,
 };
 
@@ -22,7 +22,7 @@ use super::{CreateAppRequest, PaginatedResponse, Pagination};
 /// - `201 Created` with container ID if successful.
 /// - `400 Bad Request` with error message if failed.
 pub async fn create_app(Json(payload): Json<CreateAppRequest>) -> Result<impl IntoResponse, Error> {
-    match docker::launch_container(
+    match docker::create_and_run_container(
         &payload.name,
         &payload.image,
         &payload.ports,
@@ -42,6 +42,38 @@ pub async fn create_app(Json(payload): Json<CreateAppRequest>) -> Result<impl In
                 "message": e.to_string()
             })),
         )),
+    }
+}
+
+/// Handles POST /apps/:name/start
+///
+/// Starts an existing container by name.
+///
+/// # Returns
+/// - `200 OK` if the container was started
+/// - `404 Not Found` if the container doesn't exist
+/// - `500 Internal Server Error` otherwise
+pub async fn start_app(Path(name): Path<String>) -> Result<impl IntoResponse, Error> {
+    match container::start_container(&name) {
+        Ok(_) => Ok(StatusCode::OK),
+        Err(Error::ContainerNotFound) => Ok(StatusCode::NOT_FOUND),
+        Err(_) => Ok(StatusCode::INTERNAL_SERVER_ERROR),
+    }
+}
+
+/// Handles POST /apps/:name/stop
+///
+/// Stops a running container by name.
+///
+/// # Returns
+/// - `200 OK` if the container was stopped
+/// - `404 Not Found` if the container doesn't exist
+/// - `500 Internal Server Error` otherwise
+pub async fn stop_app(Path(name): Path<String>) -> Result<impl IntoResponse, Error> {
+    match container::stop_container(&name) {
+        Ok(_) => Ok(StatusCode::OK),
+        Err(Error::ContainerNotFound) => Ok(StatusCode::NOT_FOUND),
+        Err(_) => Ok(StatusCode::INTERNAL_SERVER_ERROR),
     }
 }
 

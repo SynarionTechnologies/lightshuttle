@@ -5,7 +5,7 @@ use axum::{
 use http_body_util::BodyExt;
 use lightshuttle_core::{
     app::build_router,
-    docker::{launch_container, remove_container},
+    docker::{create_and_run_container, remove_container},
 };
 use serde_json::Value;
 use tower::ServiceExt;
@@ -74,7 +74,7 @@ async fn get_existing_app_should_succeed() {
 
     let container_name = "test-nginx-lightshuttle";
     let _ = remove_container(container_name);
-    launch_container(container_name, "nginx:latest", &[8080], 80)
+    create_and_run_container(container_name, "nginx:latest", &[8080], 80)
         .expect("Failed to launch test container");
 
     let app = build_router();
@@ -136,7 +136,7 @@ async fn get_logs_should_succeed() {
     }
 
     let container_name = "test-logs-lightshuttle";
-    let _ = launch_container(container_name, "nginx:latest", &[8081], 80);
+    let _ = create_and_run_container(container_name, "nginx:latest", &[8081], 80);
 
     let app = build_router();
     let response = app
