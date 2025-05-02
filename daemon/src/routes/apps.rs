@@ -61,6 +61,22 @@ pub async fn start_app(Path(name): Path<String>) -> Result<impl IntoResponse, Er
     }
 }
 
+/// Handles POST /apps/:name/stop
+///
+/// Stops a running container by name.
+///
+/// # Returns
+/// - `200 OK` if the container was stopped
+/// - `404 Not Found` if the container doesn't exist
+/// - `500 Internal Server Error` otherwise
+pub async fn stop_app(Path(name): Path<String>) -> Result<impl IntoResponse, Error> {
+    match container::stop_container(&name) {
+        Ok(_) => Ok(StatusCode::OK),
+        Err(Error::ContainerNotFound) => Ok(StatusCode::NOT_FOUND),
+        Err(_) => Ok(StatusCode::INTERNAL_SERVER_ERROR),
+    }
+}
+
 /// Handles GET /apps
 ///
 /// Lists running containers, paginated.
