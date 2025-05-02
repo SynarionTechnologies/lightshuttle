@@ -70,6 +70,32 @@ pub fn start_container(name: &str) -> Result<(), Error> {
     }
 }
 
+/// Stops a running Docker container by name using `docker stop`.
+///
+/// # Arguments
+/// - `name`: Name of the running container.
+///
+/// # Returns
+/// - `Ok(())` if the container was stopped successfully.
+/// - `Err(Error)` if the container does not exist or Docker CLI fails.
+pub fn stop_container(name: &str) -> Result<(), Error> {
+    let output = std::process::Command::new("docker")
+        .args(["stop", name])
+        .output()
+        .map_err(|_| Error::DockerCommandFailed)?;
+
+    if output.status.success() {
+        Ok(())
+    } else {
+        let stderr = String::from_utf8_lossy(&output.stderr).to_lowercase();
+        if stderr.contains("no such container") {
+            Err(Error::ContainerNotFound)
+        } else {
+            Err(Error::Unexpected(stderr.trim().to_string()))
+        }
+    }
+}
+
 /// Lists running Docker containers using `docker ps`.
 ///
 /// # Returns
