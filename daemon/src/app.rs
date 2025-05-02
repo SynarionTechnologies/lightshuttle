@@ -1,5 +1,7 @@
 use crate::routes::{
-    apps::{create_app, delete_app, get_app, get_app_logs, list_apps, start_app, stop_app},
+    apps::{
+        create_app, delete_app, get_app, get_app_logs, list_apps, recreate_app, start_app, stop_app,
+    },
     health, metrics, version,
 };
 use axum::{
@@ -29,6 +31,7 @@ pub fn build_router() -> Router {
         .route("/apps/:name", get(get_app).delete(delete_app))
         .route("/apps/:name/start", post(start_app))
         .route("/apps/:name/stop", post(stop_app))
+        .route("/apps/:name/recreate", post(recreate_app))
         .route("/apps/:name/logs", get(get_app_logs))
         .route("/health", get(health))
         .route("/version", get(version))

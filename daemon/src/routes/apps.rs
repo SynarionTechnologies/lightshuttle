@@ -78,6 +78,37 @@ pub async fn stop_app(Path(name): Path<String>) -> Result<impl IntoResponse, Err
     }
 }
 
+/// Handles POST /apps/:name/recreate
+///
+/// Recreates a container using its original config (image, ports, labels).
+///
+/// # Returns
+/// - `200 OK` with new container ID
+/// - `404 Not Found` if container doesn't exist
+/// - `500 Internal Server Error` otherwise
+pub async fn recreate_app(Path(name): Path<String>) -> Result<impl IntoResponse, Error> {
+    match container::recreate_container(&name) {
+        Ok(container_id) => Ok((
+            StatusCode::OK,
+            Json(serde_json::json!({ "container_id": container_id })),
+        )),
+        Err(Error::ContainerNotFound) => Ok((
+            StatusCode::NOT_FOUND,
+            Json(serde_json::json!({
+                "status": "error",
+                "message": "Container not found"
+            })),
+        )),
+        Err(_) => Ok((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({
+                "status": "error",
+                "message": "Internal error"
+            })),
+        )),
+    }
+}
+
 /// Handles GET /apps
 ///
 /// Lists running containers, paginated.
