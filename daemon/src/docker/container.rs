@@ -302,6 +302,28 @@ pub fn get_container_by_name(name: &str) -> Result<Option<AppInstance>, Error> {
     }))
 }
 
+/// Returns the status of a container by name using `docker inspect`.
+///
+/// # Arguments
+/// - `name`: Container name
+///
+/// # Returns
+/// - `Ok(status)` if found (e.g., "running", "exited", etc.)
+/// - `Err(ContainerNotFound)` if not found
+pub fn get_container_status(name: &str) -> Result<String, Error> {
+    let output = std::process::Command::new("docker")
+        .args(["inspect", name, "--format", "{{.State.Status}}"])
+        .output()
+        .map_err(|_| Error::DockerCommandFailed)?;
+
+    if !output.status.success() {
+        return Err(Error::ContainerNotFound);
+    }
+
+    let status = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    Ok(status)
+}
+
 /// Removes a Docker container by name.
 ///
 /// # Arguments

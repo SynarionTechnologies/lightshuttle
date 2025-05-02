@@ -198,3 +198,38 @@ async fn get_logs_should_succeed() {
 
     let _ = remove_container(container_name);
 }
+
+#[tokio::test]
+async fn get_app_status_should_return_running() {
+    if std::env::var("DOCKER_TEST").is_err() {
+        eprintln!("⏭️ Skipping Docker test (DOCKER_TEST not set)");
+        return;
+    }
+
+    let name = "test-status-nginx";
+    let _ = remove_container(name);
+
+    create_and_run_container(name, "nginx:latest", &[8089], 80, None, None)
+        .expect("Failed to create container");
+
+    let app = build_router();
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri(format!("/apps/{}/status", name))
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    let json: Value = serde_json::from_slice(&bytes).unwrap();
+
+    assert_eq!(json["status"], "running");
+
+    remove_container(name).expect("cleanup failed");
+}
