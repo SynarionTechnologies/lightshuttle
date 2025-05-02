@@ -4,7 +4,7 @@ use crate::errors::Error;
 
 use super::models::{AppInstance, AppStatus};
 
-/// Launches a Docker container using the `docker` CLI.
+/// Create and run a new Docker container using the `docker` CLI.
 ///
 /// # Arguments
 /// - `name`: Name to assign to the container
@@ -15,7 +15,7 @@ use super::models::{AppInstance, AppStatus};
 /// # Returns
 /// - `Ok(container_id)` on success
 /// - `Err(Error)` on failure
-pub fn launch_container(
+pub fn create_and_run_container(
     name: &str,
     image: &str,
     host_ports: &[u16],
@@ -41,6 +41,32 @@ pub fn launch_container(
     } else {
         let stderr = String::from_utf8_lossy(&output.stderr).to_string();
         Err(Error::Unexpected(stderr.trim().to_string()))
+    }
+}
+
+/// Starts a stopped Docker container by name using `docker start`.
+///
+/// # Arguments
+/// - `name`: Name of the existing container.
+///
+/// # Returns
+/// - `Ok(())` if the container was started successfully.
+/// - `Err(Error)` if the container does not exist or Docker CLI fails.
+pub fn start_container(name: &str) -> Result<(), Error> {
+    let output = std::process::Command::new("docker")
+        .args(["start", name])
+        .output()
+        .map_err(|_| Error::DockerCommandFailed)?;
+
+    if output.status.success() {
+        Ok(())
+    } else {
+        let stderr = String::from_utf8_lossy(&output.stderr).to_lowercase();
+        if stderr.contains("no such container") {
+            Err(Error::ContainerNotFound)
+        } else {
+            Err(Error::Unexpected(stderr.trim().to_string()))
+        }
     }
 }
 
