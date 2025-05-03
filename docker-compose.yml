@@ -2,9 +2,7 @@ version: '3.8'
 
 services:
   lightshuttle:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: synarion/lightshuttle:latest
     ports:
       - "${BIND_ADDRESS_PORT:-7878}:7878"
     environment:
