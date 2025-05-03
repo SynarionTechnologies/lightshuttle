@@ -22,6 +22,8 @@ pub fn create_and_run_container(
     host_ports: &[u16],
     container_port: u16,
     labels: Option<&HashMap<String, String>>,
+    env: Option<&HashMap<String, String>>,
+    restart_policy: Option<&str>,
 ) -> Result<String, Error> {
     let port_args: Vec<String> = host_ports
         .iter()
@@ -34,9 +36,31 @@ pub fn create_and_run_container(
         .flat_map(|(k, v)| vec!["--label".to_string(), format!("{k}={v}")])
         .collect();
 
+    let env_args: Vec<String> = env
+        .unwrap_or(&HashMap::new())
+        .iter()
+        .flat_map(|(k, v)| vec!["-e".to_string(), format!("{k}={v}")])
+        .collect();
+
+    if let Some(policy) = restart_policy {
+        let valid = ["no", "always", "on-failure", "unless-stopped"];
+        if !valid.contains(&policy) {
+            return Err(Error::InvalidRequest(format!(
+                "Invalid restart policy: '{}'",
+                policy
+            )));
+        }
+    }
+
     let mut args = vec!["run", "-d", "--rm", "--name", name];
     args.extend(port_args.iter().map(|s| s.as_str()));
     args.extend(label_args.iter().map(|s| s.as_str()));
+    args.extend(env_args.iter().map(|s| s.as_str()));
+
+    if let Some(policy) = restart_policy {
+        args.push("--restart");
+        args.push(policy);
+    }
     args.push(image);
 
     let output = Command::new("docker")
@@ -103,6 +127,92 @@ pub fn stop_container(name: &str) -> Result<(), Error> {
             Err(Error::Unexpected(stderr.trim().to_string()))
         }
     }
+}
+
+/// Recreates a Docker container by name: stops, deletes, and restarts it with same config.
+///
+/// # Arguments
+/// - `name`: The container to recreate
+///
+/// # Returns
+/// - `Ok(container_id)` if successful
+/// - `Err(Error)` if failed
+pub fn recreate_container(name: &str) -> Result<String, Error> {
+    let output = std::process::Command::new("docker")
+        .args(["inspect", name])
+        .output()
+        .map_err(|_| Error::DockerCommandFailed)?;
+
+    if !output.status.success() {
+        return Err(Error::ContainerNotFound);
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let container: Vec<serde_json::Value> =
+        serde_json::from_str(&stdout).map_err(|e| Error::DockerOutputParse(e.to_string()))?;
+
+    if container.is_empty() {
+        return Err(Error::ContainerNotFound);
+    }
+
+    let cfg = &container[0];
+
+    let image = cfg["Config"]["Image"]
+        .as_str()
+        .ok_or_else(|| Error::DockerOutputParse("Missing image".into()))?;
+
+    let ports = cfg["NetworkSettings"]["Ports"]
+        .as_object()
+        .ok_or_else(|| Error::DockerOutputParse("Missing ports".into()))?;
+
+    let container_port = ports
+        .keys()
+        .filter_map(|k| k.split('/').next())
+        .filter_map(|p| p.parse::<u16>().ok())
+        .next()
+        .ok_or_else(|| Error::DockerOutputParse("No container port found".into()))?;
+
+    let host_ports: Vec<u16> = ports
+        .values()
+        .filter_map(|v| v.as_array())
+        .flatten()
+        .filter_map(|binding| binding["HostPort"].as_str()?.parse().ok())
+        .collect();
+
+    let labels = cfg["Config"]["Labels"].as_object().map(|map| {
+        map.iter()
+            .map(|(k, v)| (k.clone(), v.as_str().unwrap_or("").to_string()))
+            .collect::<std::collections::HashMap<String, String>>()
+    });
+
+    let env_vars = cfg["Config"]["Env"].as_array().map(|vars| {
+        vars.iter()
+            .filter_map(|v| v.as_str())
+            .filter_map(|kv| {
+                let mut split = kv.splitn(2, '=');
+                let k = split.next()?;
+                let v = split.next().unwrap_or("");
+                Some((k.to_string(), v.to_string()))
+            })
+            .collect::<std::collections::HashMap<String, String>>()
+    });
+
+    let restart_policy = cfg["HostConfig"]["RestartPolicy"]["Name"]
+        .as_str()
+        .filter(|s| !s.is_empty())
+        .map(|s| s.to_string());
+
+    super::remove_container(name)?;
+
+    super::create_and_run_container(
+        name,
+        image,
+        &host_ports,
+        container_port,
+        labels.as_ref(),
+        env_vars.as_ref(),
+        restart_policy.as_deref(),
+    )
 }
 
 /// Lists running Docker containers using `docker ps`.
@@ -212,6 +322,28 @@ pub fn get_container_by_name(name: &str) -> Result<Option<AppInstance>, Error> {
         ports,
         created_at,
     }))
+}
+
+/// Returns the status of a container by name using `docker inspect`.
+///
+/// # Arguments
+/// - `name`: Container name
+///
+/// # Returns
+/// - `Ok(status)` if found (e.g., "running", "exited", etc.)
+/// - `Err(ContainerNotFound)` if not found
+pub fn get_container_status(name: &str) -> Result<String, Error> {
+    let output = std::process::Command::new("docker")
+        .args(["inspect", name, "--format", "{{.State.Status}}"])
+        .output()
+        .map_err(|_| Error::DockerCommandFailed)?;
+
+    if !output.status.success() {
+        return Err(Error::ContainerNotFound);
+    }
+
+    let status = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    Ok(status)
 }
 
 /// Removes a Docker container by name.

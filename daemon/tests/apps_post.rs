@@ -3,8 +3,12 @@ use axum::{
     body::Body,
     http::{Request, StatusCode},
 };
-use lightshuttle_core::{app::build_router, docker::remove_container};
-use serde_json::json;
+use http_body_util::BodyExt;
+use lightshuttle_core::{
+    app::build_router,
+    docker::{create_and_run_container, remove_container},
+};
+use serde_json::{json, Value};
 use tower::ServiceExt;
 
 #[tokio::test]
@@ -140,7 +144,6 @@ async fn post_apps_name_stop_should_succeed() {
         .args(["rm", "-f", container_name])
         .output();
 
-    // Create and start the container
     let _ = std::process::Command::new("docker")
         .args([
             "run",
@@ -204,6 +207,41 @@ async fn post_apps_name_stop_should_404_on_missing_container() {
 }
 
 #[tokio::test]
+async fn post_apps_name_recreate_should_restart_container() {
+    if std::env::var("DOCKER_TEST").is_err() {
+        eprintln!("⏭️ Skipping test: set DOCKER_TEST=1 to run it");
+        return;
+    }
+
+    let name = "test-recreate-nginx";
+    let _ = remove_container(name);
+
+    create_and_run_container(name, "nginx:latest", &[8087], 80, None, None, None)
+        .expect("Failed to create original container");
+
+    let app = build_router();
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri(format!("/apps/{}/recreate", name))
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    let json: Value = serde_json::from_slice(&bytes).unwrap();
+
+    assert!(json["container_id"].as_str().unwrap().is_empty());
+
+    let _ = remove_container(name);
+}
+
+#[tokio::test]
 async fn post_apps_should_support_labels() {
     if std::env::var("DOCKER_TEST").is_err() {
         eprintln!("⏭ Skipping Docker test (DOCKER_TEST not set)");
@@ -254,4 +292,91 @@ async fn post_apps_should_support_labels() {
     assert_eq!(labels["env"], "test");
 
     let _ = remove_container(container_name);
+}
+
+#[tokio::test]
+async fn post_apps_should_set_environment_variables() {
+    if std::env::var("DOCKER_TEST").is_err() {
+        eprintln!("⏭️ Skipping Docker test (DOCKER_TEST not set)");
+        return;
+    }
+
+    let name = "test-env-nginx";
+    let _ = remove_container(name);
+
+    let payload = json!({
+        "name": name,
+        "image": "nginx:latest",
+        "ports": [8088],
+        "container_port": 80,
+        "env": {
+            "FOO": "bar",
+            "LIGHTSHUTTLE": "true"
+        }
+    });
+
+    let app = build_router();
+    let request = Request::builder()
+        .method("POST")
+        .uri("/apps")
+        .header("Content-Type", "application/json")
+        .body(Body::from(payload.to_string()))
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    let output = std::process::Command::new("docker")
+        .args(["exec", name, "printenv", "FOO"])
+        .output()
+        .expect("Failed to exec into container");
+
+    assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), "bar");
+
+    let _ = remove_container(name);
+}
+
+#[tokio::test]
+async fn post_apps_should_apply_restart_policy() {
+    if std::env::var("DOCKER_TEST").is_err() {
+        eprintln!("⏭ Skipping test: set DOCKER_TEST=1 to run it");
+        return;
+    }
+
+    let name = "test-restart-policy";
+    let _ = remove_container(name);
+
+    let payload = json!({
+        "name": name,
+        "image": "nginx:latest",
+        "ports": [8093],
+        "container_port": 80,
+        "restart_policy": "always"
+    });
+
+    let app = build_router();
+    let request = Request::builder()
+        .method("POST")
+        .uri("/apps")
+        .header("Content-Type", "application/json")
+        .body(Body::from(payload.to_string()))
+        .unwrap();
+    let response = app.clone().oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    // Inspect Docker
+    let output = std::process::Command::new("docker")
+        .args([
+            "inspect",
+            name,
+            "--format",
+            "{{.HostConfig.RestartPolicy.Name}}",
+        ])
+        .output()
+        .expect("Failed to inspect");
+
+    let value = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    assert_eq!(value, "always");
+
+    let _ = remove_container(name);
 }

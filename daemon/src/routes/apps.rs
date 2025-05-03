@@ -28,6 +28,8 @@ pub async fn create_app(Json(payload): Json<CreateAppRequest>) -> Result<impl In
         &payload.ports,
         payload.container_port,
         payload.labels.as_ref(),
+        payload.env.as_ref(),
+        payload.restart_policy.as_deref(),
     ) {
         Ok(container_id) => Ok((
             StatusCode::CREATED,
@@ -75,6 +77,37 @@ pub async fn stop_app(Path(name): Path<String>) -> Result<impl IntoResponse, Err
         Ok(_) => Ok(StatusCode::OK),
         Err(Error::ContainerNotFound) => Ok(StatusCode::NOT_FOUND),
         Err(_) => Ok(StatusCode::INTERNAL_SERVER_ERROR),
+    }
+}
+
+/// Handles POST /apps/:name/recreate
+///
+/// Recreates a container using its original config (image, ports, labels).
+///
+/// # Returns
+/// - `200 OK` with new container ID
+/// - `404 Not Found` if container doesn't exist
+/// - `500 Internal Server Error` otherwise
+pub async fn recreate_app(Path(name): Path<String>) -> Result<impl IntoResponse, Error> {
+    match container::recreate_container(&name) {
+        Ok(container_id) => Ok((
+            StatusCode::OK,
+            Json(serde_json::json!({ "container_id": container_id })),
+        )),
+        Err(Error::ContainerNotFound) => Ok((
+            StatusCode::NOT_FOUND,
+            Json(serde_json::json!({
+                "status": "error",
+                "message": "Container not found"
+            })),
+        )),
+        Err(_) => Ok((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({
+                "status": "error",
+                "message": "Internal error"
+            })),
+        )),
     }
 }
 
@@ -156,6 +189,34 @@ pub async fn get_app_logs(Path(name): Path<String>) -> Result<Response, Error> {
         }
         Err(Error::ContainerNotFound) => Ok(StatusCode::NOT_FOUND.into_response()),
         Err(_) => Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response()),
+    }
+}
+
+/// Handles GET /apps/:name/status
+///
+/// Returns the status of a container (`running`, `exited`, etc.)
+///
+/// # Returns
+/// - `200 OK` with JSON { status }
+/// - `404 Not Found` if the container doesn't exist
+/// - `500 Internal Server Error` on error
+pub async fn get_app_status(Path(name): Path<String>) -> Result<impl IntoResponse, Error> {
+    match container::get_container_status(&name) {
+        Ok(state) => Ok((StatusCode::OK, Json(serde_json::json!({ "status": state })))),
+        Err(Error::ContainerNotFound) => Ok((
+            StatusCode::NOT_FOUND,
+            Json(serde_json::json!({
+                "status": "error",
+                "message": "Container not found"
+            })),
+        )),
+        Err(_) => Ok((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({
+                "status": "error",
+                "message": "Failed to fetch container status"
+            })),
+        )),
     }
 }
 
