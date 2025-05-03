@@ -30,7 +30,12 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+            images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+            tags: |
+                type=ref,event=branch
+                type=semver,pattern=v{{version}}
+                type=sha
+                type=raw,value=latest
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
