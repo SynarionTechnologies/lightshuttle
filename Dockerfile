@@ -18,6 +18,10 @@
     
     COPY --from=builder /app/target/release/lightshuttle_core /usr/local/bin/lightshuttle
     
+    # Non-root user (compliance Docker Scout)
+    RUN useradd -m -u 1000 lightshuttle
+    USER lightshuttle
+    
     ENV BIND_ADDRESS=0.0.0.0:7878
     EXPOSE 7878
     
