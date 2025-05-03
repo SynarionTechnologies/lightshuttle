@@ -1,3 +1,6 @@
+```md
+![Docker Image](https://img.shields.io/docker/pulls/synarion/lightshuttle?style=flat-square)
+
 # LightShuttle
 
 🚀 LightShuttle is a lightweight, fast, and self-hostable orchestrator for containerized applications, designed as a simple alternative to Kubernetes.
@@ -43,6 +46,25 @@ cargo install cargo-make
 
 # Build and test
 make
+```
+
+---
+
+## Docker deployment
+
+You can run LightShuttle directly with Docker:
+
+```bash
+docker run -d \
+  -p 7878:7878 \
+  -e BIND_ADDRESS=0.0.0.0:7878 \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  synarion/lightshuttle:latest
+```
+Or with Docker Compose :
+
+```bash
+docker-compose up -d
 ```
 
 ---
