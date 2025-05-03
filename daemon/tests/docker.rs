@@ -16,6 +16,7 @@ async fn test_launch_container_via_cli() {
         80,
         None,
         None,
+        None,
     );
 
     match result {

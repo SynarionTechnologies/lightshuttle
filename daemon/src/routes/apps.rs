@@ -29,6 +29,7 @@ pub async fn create_app(Json(payload): Json<CreateAppRequest>) -> Result<impl In
         payload.container_port,
         payload.labels.as_ref(),
         payload.env.as_ref(),
+        payload.restart_policy.as_deref(),
     ) {
         Ok(container_id) => Ok((
             StatusCode::CREATED,

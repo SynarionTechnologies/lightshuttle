@@ -23,6 +23,7 @@ pub fn create_and_run_container(
     container_port: u16,
     labels: Option<&HashMap<String, String>>,
     env: Option<&HashMap<String, String>>,
+    restart_policy: Option<&str>,
 ) -> Result<String, Error> {
     let port_args: Vec<String> = host_ports
         .iter()
@@ -41,10 +42,25 @@ pub fn create_and_run_container(
         .flat_map(|(k, v)| vec!["-e".to_string(), format!("{k}={v}")])
         .collect();
 
+    if let Some(policy) = restart_policy {
+        let valid = ["no", "always", "on-failure", "unless-stopped"];
+        if !valid.contains(&policy) {
+            return Err(Error::InvalidRequest(format!(
+                "Invalid restart policy: '{}'",
+                policy
+            )));
+        }
+    }
+
     let mut args = vec!["run", "-d", "--rm", "--name", name];
     args.extend(port_args.iter().map(|s| s.as_str()));
     args.extend(label_args.iter().map(|s| s.as_str()));
     args.extend(env_args.iter().map(|s| s.as_str()));
+
+    if let Some(policy) = restart_policy {
+        args.push("--restart");
+        args.push(policy);
+    }
     args.push(image);
 
     let output = Command::new("docker")
@@ -181,6 +197,11 @@ pub fn recreate_container(name: &str) -> Result<String, Error> {
             .collect::<std::collections::HashMap<String, String>>()
     });
 
+    let restart_policy = cfg["HostConfig"]["RestartPolicy"]["Name"]
+        .as_str()
+        .filter(|s| !s.is_empty())
+        .map(|s| s.to_string());
+
     super::remove_container(name)?;
 
     super::create_and_run_container(
@@ -190,6 +211,7 @@ pub fn recreate_container(name: &str) -> Result<String, Error> {
         container_port,
         labels.as_ref(),
         env_vars.as_ref(),
+        restart_policy.as_deref(),
     )
 }
 
