@@ -53,8 +53,16 @@ async fn apps_search_filter_should_return_matching_container() {
 
     let container_name = "lightshuttle-test-search-nginx";
     let _ = remove_container(container_name);
-    create_and_run_container(container_name, "nginx:latest", &[8085], 80, None, None)
-        .expect("Failed to launch test container");
+    create_and_run_container(
+        container_name,
+        "nginx:latest",
+        &[8085],
+        80,
+        None,
+        None,
+        None,
+    )
+    .expect("Failed to launch test container");
 
     let app = build_router();
     let response = app
@@ -111,8 +119,16 @@ async fn get_existing_app_should_succeed() {
 
     let container_name = "test-nginx-lightshuttle";
     let _ = remove_container(container_name);
-    create_and_run_container(container_name, "nginx:latest", &[8080], 80, None, None)
-        .expect("Failed to launch test container");
+    create_and_run_container(
+        container_name,
+        "nginx:latest",
+        &[8080],
+        80,
+        None,
+        None,
+        None,
+    )
+    .expect("Failed to launch test container");
 
     let app = build_router();
     let response = app
@@ -173,7 +189,15 @@ async fn get_logs_should_succeed() {
     }
 
     let container_name = "test-logs-lightshuttle";
-    let _ = create_and_run_container(container_name, "nginx:latest", &[8081], 80, None, None);
+    let _ = create_and_run_container(
+        container_name,
+        "nginx:latest",
+        &[8081],
+        80,
+        None,
+        None,
+        None,
+    );
 
     let app = build_router();
     let response = app
@@ -209,7 +233,7 @@ async fn get_app_status_should_return_running() {
     let name = "test-status-nginx";
     let _ = remove_container(name);
 
-    create_and_run_container(name, "nginx:latest", &[8089], 80, None, None)
+    create_and_run_container(name, "nginx:latest", &[8089], 80, None, None, None)
         .expect("Failed to create container");
 
     let app = build_router();
