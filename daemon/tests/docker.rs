@@ -1,6 +1,6 @@
 use std::env;
 
-use lightshuttle_core::docker::create_and_run_container;
+use lightshuttle_core::docker::{create_and_run_container, ContainerConfig};
 
 #[tokio::test]
 async fn test_launch_container_via_cli() {
@@ -9,17 +9,18 @@ async fn test_launch_container_via_cli() {
         return;
     }
 
-    let result = create_and_run_container(
-        "test-nginx-lightshuttle",
-        "nginx:latest",
-        &[8089],
-        80,
-        None,
-        None,
-        None,
-    );
+    let config = ContainerConfig {
+        name: "test-nginx-lightshuttle",
+        image: "nginx:latest",
+        host_ports: &[8089],
+        container_port: 80,
+        labels: None,
+        env: None,
+        volumes: None,
+        restart_policy: None,
+    };
 
-    match result {
+    match create_and_run_container(config) {
         Ok(container_id) => {
             println!("✅ Launched container: {}", container_id);
             assert!(!container_id.is_empty());
