@@ -11,6 +11,8 @@ use crate::{
 
 use super::{CreateAppRequest, PaginatedResponse, Pagination};
 
+use crate::docker::ContainerConfig;
+
 /// Handles POST /apps
 ///
 /// Launches a new container based on the provided configuration.
@@ -22,15 +24,18 @@ use super::{CreateAppRequest, PaginatedResponse, Pagination};
 /// - `201 Created` with container ID if successful.
 /// - `400 Bad Request` with error message if failed.
 pub async fn create_app(Json(payload): Json<CreateAppRequest>) -> Result<impl IntoResponse, Error> {
-    match docker::create_and_run_container(
-        &payload.name,
-        &payload.image,
-        &payload.ports,
-        payload.container_port,
-        payload.labels.as_ref(),
-        payload.env.as_ref(),
-        payload.volumes.as_ref(),
-    ) {
+    let config = ContainerConfig {
+        name: &payload.name,
+        image: &payload.image,
+        host_ports: &payload.ports,
+        container_port: payload.container_port,
+        labels: payload.labels.as_ref(),
+        env: payload.env.as_ref(),
+        volumes: payload.volumes.as_ref(),
+        restart_policy: payload.restart_policy.as_deref(),
+    };
+
+    match docker::create_and_run_container(config) {
         Ok(container_id) => Ok((
             StatusCode::CREATED,
             Json(serde_json::json!({

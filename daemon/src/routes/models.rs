@@ -12,6 +12,7 @@ pub struct CreateAppRequest {
     pub labels: Option<HashMap<String, String>>,
     pub env: Option<HashMap<String, String>>,
     pub volumes: Option<Vec<String>>,
+    pub restart_policy: Option<String>,
 }
 
 /// Pagination parameters for listing applications.

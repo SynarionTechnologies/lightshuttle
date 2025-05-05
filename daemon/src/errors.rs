@@ -17,6 +17,9 @@ pub enum Error {
     #[error("Unexpected error: {0}")]
     Unexpected(String),
 
+    #[error("Invalid request: {0}")]
+    InvalidRequest(String),
+
     #[error("Invalid input: {0}")]
     BadRequest(String),
 }
@@ -28,6 +31,7 @@ impl IntoResponse for Error {
             Error::DockerCommandFailed => StatusCode::INTERNAL_SERVER_ERROR,
             Error::DockerOutputParse(_) => StatusCode::INTERNAL_SERVER_ERROR,
             Error::Unexpected(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            Error::InvalidRequest(_) => StatusCode::BAD_REQUEST,
             Error::BadRequest(_) => StatusCode::BAD_REQUEST,
         };
 
