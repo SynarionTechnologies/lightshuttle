@@ -6,7 +6,7 @@ use axum::{
 use http_body_util::BodyExt;
 use lightshuttle_core::{
     app::build_router,
-    docker::{create_and_run_container, remove_container},
+    docker::{create_and_run_container, remove_container, ContainerConfig},
 };
 use serde_json::{json, Value};
 use tower::ServiceExt;
@@ -216,8 +216,18 @@ async fn post_apps_name_recreate_should_restart_container() {
     let name = "test-recreate-nginx";
     let _ = remove_container(name);
 
-    create_and_run_container(name, "nginx:latest", &[8087], 80, None, None, None)
-        .expect("Failed to create original container");
+    let config = ContainerConfig {
+        name,
+        image: "nginx:latest",
+        host_ports: &[8089],
+        container_port: 80,
+        labels: None,
+        env: None,
+        volumes: None,
+        restart_policy: None,
+    };
+
+    create_and_run_container(config).expect("Failed to create container");
 
     let app = build_router();
     let response = app
@@ -337,6 +347,54 @@ async fn post_apps_should_set_environment_variables() {
 }
 
 #[tokio::test]
+async fn post_apps_should_mount_volume() {
+    if std::env::var("DOCKER_TEST").is_err() {
+        eprintln!("⏭️ Skipping test: set DOCKER_TEST=1 to run it");
+        return;
+    }
+
+    let name = "test-volume-nginx";
+    let host_path = "/tmp/lightshuttle-test-volume";
+    let container_path = "/data";
+
+    std::fs::create_dir_all(host_path).unwrap();
+    std::fs::write(format!("{}/hello.txt", host_path), "Hello LightShuttle!").unwrap();
+
+    let payload = json!({
+        "name": name,
+        "image": "nginx:latest",
+        "ports": [8090],
+        "container_port": 80,
+        "volumes": [format!("{host_path}:{container_path}")]
+    });
+
+    let app = build_router();
+    let request = Request::builder()
+        .method("POST")
+        .uri("/apps")
+        .header("Content-Type", "application/json")
+        .body(Body::from(payload.to_string()))
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    let output = std::process::Command::new("docker")
+        .args(["exec", name, "cat", "/data/hello.txt"])
+        .output()
+        .expect("Failed to exec into container");
+
+    assert!(output.status.success());
+    assert_eq!(
+        String::from_utf8_lossy(&output.stdout).trim(),
+        "Hello LightShuttle!"
+    );
+
+    let _ = remove_container(name);
+    let _ = std::fs::remove_dir_all(host_path);
+}
+
+#[tokio::test]
 async fn post_apps_should_apply_restart_policy() {
     if std::env::var("DOCKER_TEST").is_err() {
         eprintln!("⏭ Skipping test: set DOCKER_TEST=1 to run it");
@@ -379,4 +437,104 @@ async fn post_apps_should_apply_restart_policy() {
     assert_eq!(value, "always");
 
     let _ = remove_container(name);
+}
+
+#[tokio::test]
+async fn post_apps_name_recreate_should_preserve_volumes_and_env() {
+    if std::env::var("DOCKER_TEST").is_err() {
+        eprintln!("⏭ Skipping Docker test (DOCKER_TEST not set)");
+        return;
+    }
+
+    let name = "test-recreate-persist";
+    let host_path = "/tmp/lightshuttle-recreate";
+    let container_path = "/data";
+
+    std::fs::create_dir_all(host_path).unwrap();
+    let _ = std::fs::write(format!("{}/original.txt", host_path), "before recreate");
+
+    let payload = json!({
+        "name": name,
+        "image": "nginx:latest",
+        "ports": [8091],
+        "container_port": 80,
+        "env": {
+            "RECREATE_TEST": "1"
+        },
+        "volumes": [format!("{host_path}:{container_path}")]
+    });
+
+    let app = build_router();
+    let request = Request::builder()
+        .method("POST")
+        .uri("/apps")
+        .header("Content-Type", "application/json")
+        .body(Body::from(payload.to_string()))
+        .unwrap();
+    let response = app.clone().oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    std::process::Command::new("docker")
+        .args([
+            "exec",
+            name,
+            "sh",
+            "-c",
+            "echo modified > /data/original.txt",
+        ])
+        .output()
+        .unwrap();
+
+    let recreate = Request::builder()
+        .method("POST")
+        .uri(format!("/apps/{}/recreate", name))
+        .body(Body::empty())
+        .unwrap();
+    let response = app.clone().oneshot(recreate).await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let out = std::process::Command::new("docker")
+        .args(["exec", name, "cat", "/data/original.txt"])
+        .output()
+        .unwrap();
+    assert_eq!(String::from_utf8_lossy(&out.stdout).trim(), "modified");
+
+    let out = std::process::Command::new("docker")
+        .args(["exec", name, "printenv", "RECREATE_TEST"])
+        .output()
+        .unwrap();
+    assert_eq!(String::from_utf8_lossy(&out.stdout).trim(), "1");
+
+    let _ = remove_container(name);
+    let _ = std::fs::remove_dir_all(host_path);
+}
+
+#[tokio::test]
+async fn post_apps_should_fail_on_invalid_volume_format() {
+    if std::env::var("DOCKER_TEST").is_err() {
+        eprintln!("⏭ Skipping Docker test (DOCKER_TEST not set)");
+        return;
+    }
+
+    let name = "test-bad-volume";
+
+    let payload = json!({
+        "name": name,
+        "image": "nginx:latest",
+        "ports": [8092],
+        "container_port": 80,
+        "volumes": [":/data"]
+    });
+
+    let app = build_router();
+    let request = Request::builder()
+        .method("POST")
+        .uri("/apps")
+        .header("Content-Type", "application/json")
+        .body(Body::from(payload.to_string()))
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 }

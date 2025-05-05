@@ -11,6 +11,7 @@ pub struct CreateAppRequest {
     pub container_port: u16,
     pub labels: Option<HashMap<String, String>>,
     pub env: Option<HashMap<String, String>>,
+    pub volumes: Option<Vec<String>>,
     pub restart_policy: Option<String>,
 }
 
