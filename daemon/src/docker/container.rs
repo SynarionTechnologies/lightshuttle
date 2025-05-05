@@ -2,47 +2,56 @@ use std::{collections::HashMap, process::Command};
 
 use crate::errors::Error;
 
-use super::models::{AppInstance, AppStatus};
+use super::{
+    models::{AppInstance, AppStatus},
+    ContainerConfig,
+};
 
 /// Create and run a new Docker container using the `docker` CLI.
 ///
 /// # Arguments
-/// - `name`: Name to assign to the container
-/// - `image`: Docker image to run (e.g., `nginx:latest`)
-/// - `host_ports`: List of ports to expose (host:container binding)
-/// - `container_port`: Internal port exposed by the container (e.g., 80 for nginx)
-/// - `labels`: Optional labels to assign to the container
+/// - `cfg`: Configuration for the container, including name, image, ports, etc.
 ///
 /// # Returns
 /// - `Ok(container_id)` on success
 /// - `Err(Error)` on failure
-pub fn create_and_run_container(
-    name: &str,
-    image: &str,
-    host_ports: &[u16],
-    container_port: u16,
-    labels: Option<&HashMap<String, String>>,
-    env: Option<&HashMap<String, String>>,
-    restart_policy: Option<&str>,
-) -> Result<String, Error> {
-    let port_args: Vec<String> = host_ports
+pub fn create_and_run_container(cfg: ContainerConfig) -> Result<String, Error> {
+    let port_args: Vec<String> = cfg
+        .host_ports
         .iter()
-        .flat_map(|host| vec!["-p".to_string(), format!("{host}:{container_port}")])
+        .flat_map(|host| vec!["-p".to_string(), format!("{host}:{}", cfg.container_port)])
         .collect();
 
-    let label_args: Vec<String> = labels
+    let label_args: Vec<String> = cfg
+        .labels
         .unwrap_or(&HashMap::new())
         .iter()
         .flat_map(|(k, v)| vec!["--label".to_string(), format!("{k}={v}")])
         .collect();
 
-    let env_args: Vec<String> = env
+    let env_args: Vec<String> = cfg
+        .env
         .unwrap_or(&HashMap::new())
         .iter()
         .flat_map(|(k, v)| vec!["-e".to_string(), format!("{k}={v}")])
         .collect();
 
-    if let Some(policy) = restart_policy {
+    let volume_args: Vec<String> = cfg
+        .volumes
+        .unwrap_or(&vec![])
+        .iter()
+        .flat_map(|mount| vec!["-v".to_string(), mount.to_string()])
+        .collect();
+
+    if let Some(vols) = cfg.volumes {
+        for v in vols {
+            if !v.contains(':') || v.starts_with(':') || v.ends_with(':') {
+                return Err(Error::BadRequest(format!("Invalid volume format: '{}'", v)));
+            }
+        }
+    }
+
+    if let Some(policy) = cfg.restart_policy {
         let valid = ["no", "always", "on-failure", "unless-stopped"];
         if !valid.contains(&policy) {
             return Err(Error::InvalidRequest(format!(
@@ -52,16 +61,18 @@ pub fn create_and_run_container(
         }
     }
 
-    let mut args = vec!["run", "-d", "--rm", "--name", name];
-    args.extend(port_args.iter().map(|s| s.as_str()));
-    args.extend(label_args.iter().map(|s| s.as_str()));
-    args.extend(env_args.iter().map(|s| s.as_str()));
+    let mut args = vec!["run", "-d", "--rm", "--name", cfg.name];
+    args.extend(port_args.iter().map(String::as_str));
+    args.extend(label_args.iter().map(String::as_str));
+    args.extend(env_args.iter().map(String::as_str));
+    args.extend(volume_args.iter().map(String::as_str));
 
-    if let Some(policy) = restart_policy {
+    if let Some(policy) = cfg.restart_policy {
         args.push("--restart");
         args.push(policy);
     }
-    args.push(image);
+
+    args.push(cfg.image);
 
     let output = Command::new("docker")
         .args(&args)
@@ -197,6 +208,13 @@ pub fn recreate_container(name: &str) -> Result<String, Error> {
             .collect::<std::collections::HashMap<String, String>>()
     });
 
+    let volumes = cfg["HostConfig"]["Binds"].as_array().map(|items| {
+        items
+            .iter()
+            .filter_map(|v| v.as_str())
+            .map(|s| s.to_string())
+            .collect::<Vec<String>>()
+    });
     let restart_policy = cfg["HostConfig"]["RestartPolicy"]["Name"]
         .as_str()
         .filter(|s| !s.is_empty())
@@ -204,15 +222,16 @@ pub fn recreate_container(name: &str) -> Result<String, Error> {
 
     super::remove_container(name)?;
 
-    super::create_and_run_container(
+    super::create_and_run_container(ContainerConfig {
         name,
         image,
-        &host_ports,
+        host_ports: &host_ports,
         container_port,
-        labels.as_ref(),
-        env_vars.as_ref(),
-        restart_policy.as_deref(),
-    )
+        labels: labels.as_ref(),
+        env: env_vars.as_ref(),
+        volumes: volumes.as_ref(),
+        restart_policy: restart_policy.as_deref(),
+    })
 }
 
 /// Lists running Docker containers using `docker ps`.

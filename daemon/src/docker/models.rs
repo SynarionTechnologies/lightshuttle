@@ -1,4 +1,18 @@
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
+
+/// Container creation parameters
+pub struct ContainerConfig<'a> {
+    pub name: &'a str,
+    pub image: &'a str,
+    pub host_ports: &'a [u16],
+    pub container_port: u16,
+    pub labels: Option<&'a HashMap<String, String>>,
+    pub env: Option<&'a HashMap<String, String>>,
+    pub volumes: Option<&'a Vec<String>>,
+    pub restart_policy: Option<&'a str>,
+}
 
 /// Represents an application instance (a running Docker container).
 #[derive(Serialize, Deserialize, Clone)]
