@@ -68,6 +68,8 @@ Or with Docker Compose :
 docker-compose up -d
 ```
 
+Ensure you have Docker installed, and the docker.sock is correctly mounted.
+
 ---
 
 ## Running the Daemon
@@ -93,15 +95,24 @@ BIND_ADDRESS=0.0.0.0:7878 cargo run --bin lightshuttle_core
 ## Roadmap
 
 - [x] Basic container lifecycle (create, list, delete, logs)
-- [ ] Start/Stop containers
-- [ ] Search containers
-- [ ] Labels support
-- [ ] Update/Recreate containers
-- [ ] Full error refinement
+- [x] Start/Stop containers
+- [x] Search containers
+- [x] Labels support
+- [x] Update/Recreate containers
+- [x] Volume mounts support
+- [x] Restart policies
+- [ ] Full error refinement (Docker exit codes, stderr parsing, etc.)
 - [ ] CLI client (`lightshuttle-cli`)
 - [ ] Dashboard web UI
-- [ ] Authentication & RBAC
-- [ ] Templates system (Helm-light)
+- [ ] Authentication & RBAC (API keys, roles)
+- [ ] Template system (Helm-light style)
+- [ ] Resource limits (CPU/memory)
+- [ ] Healthcheck support (probe + restart on failure)
+- [ ] Init containers
+- [ ] Backup/restore volumes
+- [ ] Persistent state (optionally save config / containers to disk)
+- [ ] Internal DNS / service discovery
+- [ ] Graceful shutdown & signal handling
 
 ---
 
