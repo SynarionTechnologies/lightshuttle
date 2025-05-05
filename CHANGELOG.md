@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.2.0] – 2025-05-05
+
+### Added
+- 🚀 Support for Docker volumes via `volumes: ["/host:/container"]`
+- ♻️ Container recreation (`POST /apps/{name}/recreate`) preserving config (env, ports, labels, volumes, restart policy)
+- 🟢 Start / Stop container endpoints (`POST /apps/{name}/start` and `.../stop`)
+- 🔍 Search support in `GET /apps?search=...`
+- 🏷 Container labels via `labels: { "key": "value" }`
+- 🌱 Restart policy support (`always`, `on-failure`, etc.)
+- 🧪 Extensive Docker-based integration tests with `DOCKER_TEST=1`
+
+### Changed
+- 🧱 Refactored `create_and_run_container` into `ContainerConfig` struct (breaking change for internal API)
+- 🧹 Codebase cleaned for Clippy compliance (`-D warnings`)
+- 📦 CI enforces fmt + clippy + test
+
+### Fixed
+- 🔒 Invalid volume format now correctly returns `400 Bad Request`
+- ✅ Recreate now properly handles missing port bindings or empty labels/envs
+
+### Removed
+- ❌ Legacy signature for `create_and_run_container` (replaced by struct-based API)
+
+---
+
 ## [0.1.0-alpha] - 2025-04-28
 
 ### Added
