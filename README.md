@@ -1,4 +1,5 @@
-```md
+![Build](https://github.com/LightShuttle/lightshuttle/actions/workflows/ci.yml/badge.svg)
+![Build](https://github.com/LightShuttle/lightshuttle/actions/workflows/docker-publish.yml/badge.svg)
 ![Docker Image](https://img.shields.io/docker/pulls/synarion/lightshuttle?style=flat-square)
 
 # LightShuttle
