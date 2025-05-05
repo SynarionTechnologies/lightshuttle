@@ -131,4 +131,4 @@ Official website: [https://www.getlightshuttle.com](https://www.getlightshuttle.
 
 ## Credits
 
-Developed by **Pierrick FONQUERNE**.
+Developed by **[Pierrick FONQUERNE](https://www.linkedin.com/in/pierrickfonquerne/)**.
