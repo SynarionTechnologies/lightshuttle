@@ -54,7 +54,9 @@ pub fn create_and_run_container(cfg: ContainerConfig) -> Result<String, Error> {
     if let Some(policy) = cfg.restart_policy {
         let valid = ["no", "always", "on-failure", "unless-stopped"];
         if !valid.contains(&policy) {
-            return Err(Error::InvalidRequest(format!("Invalid restart policy: '{policy}'")));
+            return Err(Error::InvalidRequest(format!(
+                "Invalid restart policy: '{policy}'"
+            )));
         }
     }
 
