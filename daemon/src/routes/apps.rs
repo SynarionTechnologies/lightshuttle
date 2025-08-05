@@ -5,7 +5,7 @@ use axum::{
 };
 
 use crate::{
-    docker::{self, container, AppInstance},
+    docker::{self, container},
     errors::Error,
 };
 
@@ -35,22 +35,14 @@ pub async fn create_app(Json(payload): Json<CreateAppRequest>) -> Result<impl In
         restart_policy: payload.restart_policy.as_deref(),
     };
 
-    match docker::create_and_run_container(config) {
-        Ok(container_id) => Ok((
-            StatusCode::CREATED,
-            Json(serde_json::json!({
-                "status": "success",
-                "container_id": container_id
-            })),
-        )),
-        Err(e) => Ok((
-            StatusCode::BAD_REQUEST,
-            Json(serde_json::json!({
-                "status": "error",
-                "message": e.to_string()
-            })),
-        )),
-    }
+    let container_id = docker::create_and_run_container(config)?;
+    Ok((
+        StatusCode::CREATED,
+        Json(serde_json::json!({
+            "status": "success",
+            "container_id": container_id
+        })),
+    ))
 }
 
 /// Handles POST /apps/:name/start
@@ -62,11 +54,8 @@ pub async fn create_app(Json(payload): Json<CreateAppRequest>) -> Result<impl In
 /// - `404 Not Found` if the container doesn't exist
 /// - `500 Internal Server Error` otherwise
 pub async fn start_app(Path(name): Path<String>) -> Result<impl IntoResponse, Error> {
-    match container::start_container(&name) {
-        Ok(_) => Ok(StatusCode::OK),
-        Err(Error::ContainerNotFound) => Ok(StatusCode::NOT_FOUND),
-        Err(_) => Ok(StatusCode::INTERNAL_SERVER_ERROR),
-    }
+    container::start_container(&name)?;
+    Ok(StatusCode::OK)
 }
 
 /// Handles POST /apps/:name/stop
@@ -78,11 +67,8 @@ pub async fn start_app(Path(name): Path<String>) -> Result<impl IntoResponse, Er
 /// - `404 Not Found` if the container doesn't exist
 /// - `500 Internal Server Error` otherwise
 pub async fn stop_app(Path(name): Path<String>) -> Result<impl IntoResponse, Error> {
-    match container::stop_container(&name) {
-        Ok(_) => Ok(StatusCode::OK),
-        Err(Error::ContainerNotFound) => Ok(StatusCode::NOT_FOUND),
-        Err(_) => Ok(StatusCode::INTERNAL_SERVER_ERROR),
-    }
+    container::stop_container(&name)?;
+    Ok(StatusCode::OK)
 }
 
 /// Handles POST /apps/:name/recreate
@@ -94,26 +80,11 @@ pub async fn stop_app(Path(name): Path<String>) -> Result<impl IntoResponse, Err
 /// - `404 Not Found` if container doesn't exist
 /// - `500 Internal Server Error` otherwise
 pub async fn recreate_app(Path(name): Path<String>) -> Result<impl IntoResponse, Error> {
-    match container::recreate_container(&name) {
-        Ok(container_id) => Ok((
-            StatusCode::OK,
-            Json(serde_json::json!({ "container_id": container_id })),
-        )),
-        Err(Error::ContainerNotFound) => Ok((
-            StatusCode::NOT_FOUND,
-            Json(serde_json::json!({
-                "status": "error",
-                "message": "Container not found"
-            })),
-        )),
-        Err(_) => Ok((
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({
-                "status": "error",
-                "message": "Internal error"
-            })),
-        )),
-    }
+    let container_id = container::recreate_container(&name)?;
+    Ok((
+        StatusCode::OK,
+        Json(serde_json::json!({ "container_id": container_id })),
+    ))
 }
 
 /// Handles GET /apps
@@ -125,9 +96,14 @@ pub async fn recreate_app(Path(name): Path<String>) -> Result<impl IntoResponse,
 ///
 /// # Returns
 /// - `200 OK` with paginated list of applications.
-/// - `500 Internal Server Error` if Docker command fails.
+/// - `200 OK` with an empty list if Docker is unavailable.
+/// - `500 Internal Server Error` on unexpected errors.
 pub async fn list_apps(Query(pagination): Query<Pagination>) -> Result<impl IntoResponse, Error> {
-    let all_apps = docker::get_running_containers()?;
+    let all_apps = match docker::get_running_containers() {
+        Ok(apps) => apps,
+        Err(Error::DockerCommandFailed) => Vec::new(),
+        Err(e) => return Err(e),
+    };
 
     let filtered: Vec<_> = match &pagination.search {
         Some(query) => {
@@ -172,10 +148,8 @@ pub async fn list_apps(Query(pagination): Query<Pagination>) -> Result<impl Into
 /// - `404 Not Found` if the app does not exist
 /// - `500 Internal Server Error` if Docker command fails
 pub async fn get_app(Path(name): Path<String>) -> Result<impl IntoResponse, Error> {
-    match docker::get_container_by_name(&name)? {
-        Some(app) => Ok((StatusCode::OK, Json(Some(app)))),
-        None => Ok((StatusCode::NOT_FOUND, Json(None::<AppInstance>))),
-    }
+    let app = docker::get_container_by_name(&name)?.ok_or(Error::ContainerNotFound)?;
+    Ok((StatusCode::OK, Json(app)))
 }
 
 /// Retrieve the logs of a running container.
@@ -188,13 +162,8 @@ pub async fn get_app(Path(name): Path<String>) -> Result<impl IntoResponse, Erro
 /// - `404 Not Found` if the container does not exist.
 /// - `500 Internal Server Error` if fetching logs fails.
 pub async fn get_app_logs(Path(name): Path<String>) -> Result<Response, Error> {
-    match docker::get_container_logs(&name) {
-        Ok(logs) => {
-            Ok((StatusCode::OK, [(header::CONTENT_TYPE, "text/plain")], logs).into_response())
-        }
-        Err(Error::ContainerNotFound) => Ok(StatusCode::NOT_FOUND.into_response()),
-        Err(_) => Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response()),
-    }
+    let logs = docker::get_container_logs(&name)?;
+    Ok((StatusCode::OK, [(header::CONTENT_TYPE, "text/plain")], logs).into_response())
 }
 
 /// Handles GET /apps/:name/status
@@ -206,23 +175,8 @@ pub async fn get_app_logs(Path(name): Path<String>) -> Result<Response, Error> {
 /// - `404 Not Found` if the container doesn't exist
 /// - `500 Internal Server Error` on error
 pub async fn get_app_status(Path(name): Path<String>) -> Result<impl IntoResponse, Error> {
-    match container::get_container_status(&name) {
-        Ok(state) => Ok((StatusCode::OK, Json(serde_json::json!({ "status": state })))),
-        Err(Error::ContainerNotFound) => Ok((
-            StatusCode::NOT_FOUND,
-            Json(serde_json::json!({
-                "status": "error",
-                "message": "Container not found"
-            })),
-        )),
-        Err(_) => Ok((
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({
-                "status": "error",
-                "message": "Failed to fetch container status"
-            })),
-        )),
-    }
+    let state = container::get_container_status(&name)?;
+    Ok((StatusCode::OK, Json(serde_json::json!({ "status": state }))))
 }
 
 /// Deletes an application/container by its name.
@@ -235,9 +189,6 @@ pub async fn get_app_status(Path(name): Path<String>) -> Result<impl IntoRespons
 /// - `404 Not Found` if container doesn't exist
 /// - `500 Internal Server Error` if something went wrong
 pub async fn delete_app(Path(name): Path<String>) -> Result<impl IntoResponse, Error> {
-    match docker::remove_container(&name) {
-        Ok(_) => Ok(StatusCode::NO_CONTENT),
-        Err(Error::ContainerNotFound) => Ok(StatusCode::NOT_FOUND),
-        Err(_) => Ok(StatusCode::INTERNAL_SERVER_ERROR),
-    }
+    docker::remove_container(&name)?;
+    Ok(StatusCode::NO_CONTENT)
 }

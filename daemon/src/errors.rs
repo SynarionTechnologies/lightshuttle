@@ -1,5 +1,5 @@
-use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use axum::{http::StatusCode, Json};
 use thiserror::Error;
 
 /// Defines all the possible errors for the LightShuttle daemon service.
@@ -34,7 +34,10 @@ impl IntoResponse for Error {
             Error::InvalidRequest(_) => StatusCode::BAD_REQUEST,
             Error::BadRequest(_) => StatusCode::BAD_REQUEST,
         };
+        let body = Json(serde_json::json!({
+            "error": self.to_string(),
+        }));
 
-        status.into_response()
+        (status, body).into_response()
     }
 }

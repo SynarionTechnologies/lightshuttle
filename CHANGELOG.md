@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.3.0] – 2025-08-02
+
+### Added
+- 📜 Unified JSON error responses with proper HTTP status codes
+- ♻️ Routes propagate errors directly and return an empty list when Docker isn't available
+- 🧪 Integration test ensuring error messages are included in responses
+
+
 ## [0.2.0] – 2025-05-05
 
 ### Added

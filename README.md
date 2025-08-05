@@ -16,6 +16,7 @@
 - 🛠 Simple REST API (no GraphQL)
 - 📈 Metrics ready for Prometheus
 - 🧹 Designed for developers: deploy faster, debug easier
+- 📜 Consistent JSON error responses
 
 ---
 

@@ -441,15 +441,28 @@ dependencies = [
 
 [[package]]
 name = "lightshuttle-cli"
-version = "0.1.0"
+version = "0.3.0"
 
 [[package]]
 name = "lightshuttle-dashboard"
-version = "0.1.0"
+version = "0.3.0"
+dependencies = [
+ "axum",
+ "http-body-util",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tower 0.4.13",
+ "tower-http",
+ "tracing",
+ "tracing-subscriber",
+ "utoipa",
+ "utoipa-swagger-ui",
+]
 
 [[package]]
 name = "lightshuttle_core"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "axum",
  "http-body-util",
