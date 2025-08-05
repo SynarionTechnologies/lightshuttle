@@ -137,7 +137,7 @@ async fn get_existing_app_should_succeed() {
     let response = app
         .oneshot(
             Request::builder()
-                .uri(format!("/apps/{}", container_name))
+                .uri(format!("/apps/{container_name}"))
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -150,8 +150,8 @@ async fn get_existing_app_should_succeed() {
         .unwrap();
     let body: Value = serde_json::from_slice(&body_bytes).unwrap();
 
-    println!("Status: {}", status);
-    println!("Body: {}", body);
+    println!("Status: {status}");
+    println!("Body: {body}");
 
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body["name"], container_name);
@@ -179,7 +179,7 @@ async fn get_non_existing_app_should_return_404() {
         .unwrap();
 
     let status = response.status();
-    println!("Status: {}", status);
+    println!("Status: {status}");
 
     assert_eq!(status, StatusCode::NOT_FOUND);
 }
@@ -209,7 +209,7 @@ async fn get_logs_should_succeed() {
     let response = app
         .oneshot(
             Request::builder()
-                .uri(format!("/apps/{}/logs", container_name))
+                .uri(format!("/apps/{container_name}/logs"))
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -223,7 +223,7 @@ async fn get_logs_should_succeed() {
         .unwrap();
     let body_str = String::from_utf8_lossy(&body);
 
-    println!("Logs:\n{}", body_str);
+    println!("Logs:\n{body_str}");
     assert!(body_str.contains("nginx"));
 
     let _ = remove_container(container_name);
@@ -257,7 +257,7 @@ async fn get_app_status_should_return_running() {
     let response = app
         .oneshot(
             Request::builder()
-                .uri(format!("/apps/{}/status", name))
+                .uri(format!("/apps/{name}/status"))
                 .body(Body::empty())
                 .unwrap(),
         )

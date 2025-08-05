@@ -16,10 +16,11 @@ use super::{
 /// - `Ok(container_id)` on success
 /// - `Err(Error)` on failure
 pub fn create_and_run_container(cfg: ContainerConfig) -> Result<String, Error> {
+    let port = cfg.container_port;
     let port_args: Vec<String> = cfg
         .host_ports
         .iter()
-        .flat_map(|host| vec!["-p".to_string(), format!("{host}:{}", cfg.container_port)])
+        .flat_map(|host| vec!["-p".to_string(), format!("{host}:{port}")])
         .collect();
 
     let label_args: Vec<String> = cfg
@@ -46,7 +47,7 @@ pub fn create_and_run_container(cfg: ContainerConfig) -> Result<String, Error> {
     if let Some(vols) = cfg.volumes {
         for v in vols {
             if !v.contains(':') || v.starts_with(':') || v.ends_with(':') {
-                return Err(Error::BadRequest(format!("Invalid volume format: '{}'", v)));
+                return Err(Error::BadRequest(format!("Invalid volume format: '{v}'")));
             }
         }
     }
@@ -55,8 +56,7 @@ pub fn create_and_run_container(cfg: ContainerConfig) -> Result<String, Error> {
         let valid = ["no", "always", "on-failure", "unless-stopped"];
         if !valid.contains(&policy) {
             return Err(Error::InvalidRequest(format!(
-                "Invalid restart policy: '{}'",
-                policy
+                "Invalid restart policy: '{policy}'"
             )));
         }
     }
