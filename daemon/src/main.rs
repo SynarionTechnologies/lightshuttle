@@ -22,17 +22,17 @@ async fn main() {
     // Read bind address from environment variable or fallback to default
     let bind_addr = std::env::var("BIND_ADDRESS").unwrap_or_else(|_| "127.0.0.1:7878".to_string());
     let addr: SocketAddr = bind_addr.parse().unwrap_or_else(|_| {
-        tracing::error!("Invalid bind address provided: {}", bind_addr);
+        tracing::error!("Invalid bind address provided: {bind_addr}");
         std::process::exit(1);
     });
 
-    tracing::info!("LightShuttle API starting on http://{}", addr);
+    tracing::info!("LightShuttle API starting on http://{addr}");
 
     // Bind TCP listener
     let listener = tokio::net::TcpListener::bind(addr)
         .await
         .unwrap_or_else(|e| {
-            tracing::error!("Failed to bind address: {}", e);
+            tracing::error!("Failed to bind address: {e}");
             std::process::exit(1);
         });
 
@@ -40,7 +40,7 @@ async fn main() {
     axum::serve(listener, build_router())
         .await
         .unwrap_or_else(|e| {
-            tracing::error!("Server crashed: {}", e);
+            tracing::error!("Server crashed: {e}");
             std::process::exit(1);
         });
 }

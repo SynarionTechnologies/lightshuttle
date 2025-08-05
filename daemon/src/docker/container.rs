@@ -16,10 +16,11 @@ use super::{
 /// - `Ok(container_id)` on success
 /// - `Err(Error)` on failure
 pub fn create_and_run_container(cfg: ContainerConfig) -> Result<String, Error> {
+    let port = cfg.container_port;
     let port_args: Vec<String> = cfg
         .host_ports
         .iter()
-        .flat_map(|host| vec!["-p".to_string(), format!("{host}:{}", cfg.container_port)])
+        .flat_map(|host| vec!["-p".to_string(), format!("{host}:{port}")]
         .collect();
 
     let label_args: Vec<String> = cfg
