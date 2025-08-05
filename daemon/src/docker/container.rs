@@ -20,7 +20,7 @@ pub fn create_and_run_container(cfg: ContainerConfig) -> Result<String, Error> {
     let port_args: Vec<String> = cfg
         .host_ports
         .iter()
-        .flat_map(|host| vec!["-p".to_string(), format!("{host}:{port}")]
+        .flat_map(|host| vec!["-p".to_string(), format!("{host}:{port}")])
         .collect();
 
     let label_args: Vec<String> = cfg
