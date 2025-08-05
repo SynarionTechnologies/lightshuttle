@@ -47,8 +47,8 @@ async fn post_apps_should_succeed() {
         .unwrap();
     let body = String::from_utf8_lossy(&body_bytes);
 
-    println!("Status: {}", status);
-    println!("Body: {}", body);
+    println!("Status: {status}");
+    println!("Body: {body}");
 
     let _ = std::process::Command::new("docker")
         .args(["rm", "-f", container_name])
@@ -85,7 +85,7 @@ async fn post_apps_name_start_should_succeed() {
 
     let request = Request::builder()
         .method("POST")
-        .uri(format!("/apps/{}/start", container_name))
+        .uri(format!("/apps/{container_name}/start"))
         .body(Body::empty())
         .unwrap();
 
@@ -96,8 +96,8 @@ async fn post_apps_name_start_should_succeed() {
         .unwrap();
     let body = String::from_utf8_lossy(&body_bytes);
 
-    println!("Status: {}", status);
-    println!("Body: {}", body);
+    println!("Status: {status}");
+    println!("Body: {body}");
 
     let _ = std::process::Command::new("docker")
         .args(["rm", "-f", container_name])
@@ -119,14 +119,14 @@ async fn post_apps_name_start_should_404_on_missing_container() {
 
     let request = Request::builder()
         .method("POST")
-        .uri(format!("/apps/{}/start", container_name))
+        .uri(format!("/apps/{container_name}/start"))
         .body(Body::empty())
         .unwrap();
 
     let response = app.oneshot(request).await.unwrap();
     let status = response.status();
 
-    println!("Status: {}", status);
+    println!("Status: {status}");
 
     assert_eq!(status, StatusCode::NOT_FOUND);
 }
@@ -160,7 +160,7 @@ async fn post_apps_name_stop_should_succeed() {
 
     let request = Request::builder()
         .method("POST")
-        .uri(format!("/apps/{}/stop", container_name))
+        .uri(format!("/apps/{container_name}/stop"))
         .body(Body::empty())
         .unwrap();
 
@@ -171,8 +171,8 @@ async fn post_apps_name_stop_should_succeed() {
         .unwrap();
     let body = String::from_utf8_lossy(&body_bytes);
 
-    println!("Status: {}", status);
-    println!("Body: {}", body);
+    println!("Status: {status}");
+    println!("Body: {body}");
 
     let _ = std::process::Command::new("docker")
         .args(["rm", "-f", container_name])
@@ -194,14 +194,14 @@ async fn post_apps_name_stop_should_404_on_missing_container() {
 
     let request = Request::builder()
         .method("POST")
-        .uri(format!("/apps/{}/stop", container_name))
+        .uri(format!("/apps/{container_name}/stop"))
         .body(Body::empty())
         .unwrap();
 
     let response = app.oneshot(request).await.unwrap();
     let status = response.status();
 
-    println!("Status: {}", status);
+    println!("Status: {status}");
 
     assert_eq!(status, StatusCode::NOT_FOUND);
 }
@@ -234,7 +234,7 @@ async fn post_apps_name_recreate_should_restart_container() {
         .oneshot(
             Request::builder()
                 .method("POST")
-                .uri(format!("/apps/{}/recreate", name))
+                .uri(format!("/apps/{name}/recreate"))
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -358,7 +358,7 @@ async fn post_apps_should_mount_volume() {
     let container_path = "/data";
 
     std::fs::create_dir_all(host_path).unwrap();
-    std::fs::write(format!("{}/hello.txt", host_path), "Hello LightShuttle!").unwrap();
+    std::fs::write(format!("{host_path}/hello.txt"), "Hello LightShuttle!").unwrap();
 
     let payload = json!({
         "name": name,
@@ -422,7 +422,6 @@ async fn post_apps_should_apply_restart_policy() {
     let response = app.clone().oneshot(request).await.unwrap();
     assert_eq!(response.status(), StatusCode::CREATED);
 
-    // Inspect Docker
     let output = std::process::Command::new("docker")
         .args([
             "inspect",
@@ -451,7 +450,7 @@ async fn post_apps_name_recreate_should_preserve_volumes_and_env() {
     let container_path = "/data";
 
     std::fs::create_dir_all(host_path).unwrap();
-    let _ = std::fs::write(format!("{}/original.txt", host_path), "before recreate");
+    let _ = std::fs::write(format!("{host_path}/original.txt"), "before recreate");
 
     let payload = json!({
         "name": name,
@@ -487,7 +486,7 @@ async fn post_apps_name_recreate_should_preserve_volumes_and_env() {
 
     let recreate = Request::builder()
         .method("POST")
-        .uri(format!("/apps/{}/recreate", name))
+        .uri(format!("/apps/{name}/recreate"))
         .body(Body::empty())
         .unwrap();
     let response = app.clone().oneshot(recreate).await.unwrap();

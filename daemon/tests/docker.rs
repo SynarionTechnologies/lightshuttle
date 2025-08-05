@@ -22,11 +22,11 @@ async fn test_launch_container_via_cli() {
 
     match create_and_run_container(config) {
         Ok(container_id) => {
-            println!("✅ Launched container: {}", container_id);
+            println!("✅ Launched container: {container_id}");
             assert!(!container_id.is_empty());
         }
         Err(e) => {
-            eprintln!("❌ Failed to launch container: {}", e);
+            eprintln!("❌ Failed to launch container: {e}");
             panic!("Container launch failed");
         }
     }

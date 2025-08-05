@@ -36,7 +36,7 @@ async fn delete_existing_app_should_succeed() {
         .oneshot(
             Request::builder()
                 .method("DELETE")
-                .uri(format!("/apps/{}", container_name))
+                .uri(format!("/apps/{container_name}"))
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -44,7 +44,7 @@ async fn delete_existing_app_should_succeed() {
         .unwrap();
 
     let status = response.status();
-    println!("Status: {}", status);
+    println!("Status: {status}");
 
     assert_eq!(status, StatusCode::NO_CONTENT);
 }
@@ -69,7 +69,7 @@ async fn delete_non_existing_app_should_return_404() {
         .unwrap();
 
     let status = response.status();
-    println!("Status: {}", status);
+    println!("Status: {status}");
 
     assert_eq!(status, StatusCode::NOT_FOUND);
 }
