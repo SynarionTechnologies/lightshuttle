@@ -6,10 +6,14 @@ use crate::routes::{
     health, metrics, version,
 };
 use axum::{
+    body::Body,
+    http::{header, HeaderValue, StatusCode},
+    middleware::{from_fn, Next},
     routing::{get, post},
     Router,
 };
-use tower_http::cors::CorsLayer;
+use std::{convert::Infallible, env};
+use tower_http::cors::{Any, CorsLayer};
 
 /// Builds the main application router.
 ///
@@ -27,7 +31,28 @@ use tower_http::cors::CorsLayer;
 /// # Returns
 /// A configured `axum::Router` instance ready to be served.
 pub fn build_router() -> Router {
-    Router::new()
+    let allowed_origins = env::var("ALLOWED_ORIGINS")
+        .ok()
+        .map(|val| {
+            val.split(',')
+                .filter_map(|s| HeaderValue::from_str(s.trim()).ok())
+                .collect::<Vec<_>>()
+        })
+        .filter(|v| !v.is_empty());
+
+    let cors = {
+        let base = CorsLayer::new()
+            .allow_headers(Any)
+            .allow_methods(Any)
+            .expose_headers(Any);
+
+        match &allowed_origins {
+            Some(origins) => base.allow_origin(origins.clone()),
+            None => base.allow_origin(Any),
+        }
+    };
+
+    let router = Router::new()
         .route("/apps", get(list_apps).post(create_app))
         .route("/apps/:name", get(get_app).delete(delete_app))
         .route("/apps/:name/start", post(start_app))
@@ -38,5 +63,28 @@ pub fn build_router() -> Router {
         .route("/health", get(health))
         .route("/version", get(version))
         .route("/metrics", get(metrics))
-        .layer(CorsLayer::permissive())
+        .layer(cors);
+
+    if let Some(origins) = allowed_origins {
+        router.layer(from_fn(
+            move |req: axum::http::Request<Body>, next: Next| {
+                let origins = origins.clone();
+                async move {
+                    if let Some(origin) = req.headers().get(header::ORIGIN) {
+                        if !origins.contains(origin) {
+                            return Ok::<_, Infallible>(
+                                axum::response::Response::builder()
+                                    .status(StatusCode::FORBIDDEN)
+                                    .body(Body::empty())
+                                    .unwrap(),
+                            );
+                        }
+                    }
+                    Ok::<_, Infallible>(next.run(req).await)
+                }
+            },
+        ))
+    } else {
+        router
+    }
 }
