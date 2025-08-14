@@ -4,7 +4,7 @@ use axum::{
 };
 use http_body_util::BodyExt;
 use lightshuttle_core::{
-    app::build_router,
+    api::routes::router,
     docker::{create_and_run_container, remove_container, ContainerConfig},
 };
 use serde_json::Value;
@@ -12,9 +12,14 @@ use tower::ServiceExt;
 
 #[tokio::test]
 async fn apps_basic_returns_ok() {
-    let app = build_router();
+    let app = router();
     let response = app
-        .oneshot(Request::builder().uri("/apps").body(Body::empty()).unwrap())
+        .oneshot(
+            Request::builder()
+                .uri("/api/v1/apps")
+                .body(Body::empty())
+                .unwrap(),
+        )
         .await
         .unwrap();
 
@@ -23,11 +28,11 @@ async fn apps_basic_returns_ok() {
 
 #[tokio::test]
 async fn apps_paginated_returns_data() {
-    let app = build_router();
+    let app = router();
     let response = app
         .oneshot(
             Request::builder()
-                .uri("/apps?page=1&limit=5")
+                .uri("/api/v1/apps?page=1&limit=5")
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -66,11 +71,11 @@ async fn apps_search_filter_should_return_matching_container() {
 
     create_and_run_container(config).expect("Failed to create container");
 
-    let app = build_router();
+    let app = router();
     let response = app
         .oneshot(
             Request::builder()
-                .uri("/apps?search=search-nginx")
+                .uri("/api/v1/apps?search=search-nginx")
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -93,11 +98,11 @@ async fn apps_search_filter_should_return_matching_container() {
 
 #[tokio::test]
 async fn apps_pagination_overflow_returns_empty() {
-    let app = build_router();
+    let app = router();
     let response = app
         .oneshot(
             Request::builder()
-                .uri("/apps?page=1000&limit=10")
+                .uri("/api/v1/apps?page=1000&limit=10")
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -133,11 +138,11 @@ async fn get_existing_app_should_succeed() {
     };
 
     create_and_run_container(config).expect("Failed to create container");
-    let app = build_router();
+    let app = router();
     let response = app
         .oneshot(
             Request::builder()
-                .uri(format!("/apps/{container_name}"))
+                .uri(format!("/api/v1/apps/{container_name}"))
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -166,12 +171,12 @@ async fn get_non_existing_app_should_return_404() {
         return;
     }
 
-    let app = build_router();
+    let app = router();
 
     let response = app
         .oneshot(
             Request::builder()
-                .uri("/apps/i-dont-exist")
+                .uri("/api/v1/apps/i-dont-exist")
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -205,11 +210,11 @@ async fn get_logs_should_succeed() {
 
     create_and_run_container(config).expect("Failed to create container");
 
-    let app = build_router();
+    let app = router();
     let response = app
         .oneshot(
             Request::builder()
-                .uri(format!("/apps/{container_name}/logs"))
+                .uri(format!("/api/v1/apps/{container_name}/logs"))
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -252,12 +257,12 @@ async fn get_app_status_should_return_running() {
 
     create_and_run_container(config).expect("Failed to create container");
 
-    let app = build_router();
+    let app = router();
 
     let response = app
         .oneshot(
             Request::builder()
-                .uri(format!("/apps/{name}/status"))
+                .uri(format!("/api/v1/apps/{name}/status"))
                 .body(Body::empty())
                 .unwrap(),
         )

@@ -1,9 +1,9 @@
-mod app;
+mod api;
 mod docker;
 mod errors;
 mod routes;
 
-use app::build_router;
+use api::routes::router;
 use std::net::SocketAddr;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -37,10 +37,8 @@ async fn main() {
         });
 
     // Start serving using axum
-    axum::serve(listener, build_router())
-        .await
-        .unwrap_or_else(|e| {
-            tracing::error!("Server crashed: {e}");
-            std::process::exit(1);
-        });
+    axum::serve(listener, router()).await.unwrap_or_else(|e| {
+        tracing::error!("Server crashed: {e}");
+        std::process::exit(1);
+    });
 }

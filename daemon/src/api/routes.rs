@@ -1,10 +1,3 @@
-use crate::routes::{
-    apps::{
-        create_app, delete_app, get_app, get_app_logs, get_app_status, list_apps, recreate_app,
-        start_app, stop_app,
-    },
-    health, metrics, version,
-};
 use axum::{
     body::Body,
     http::{header, HeaderValue, StatusCode},
@@ -15,22 +8,16 @@ use axum::{
 use std::{convert::Infallible, env};
 use tower_http::cors::{Any, CorsLayer};
 
-/// Builds the main application router.
-///
-/// This router wires all the available HTTP routes and applies middleware (like CORS).
-///
-/// # Routes
-/// - `GET /apps` — List running applications.
-/// - `POST /apps` — Create (launch) a new application.
-/// - `GET /apps/:name` — Get a single application by its name.
-/// - `GET /apps/:name/logs` — Get logs for a specific application.
-/// - `GET /health` — Healthcheck endpoint.
-/// - `GET /version` — Application version information.
-/// - `GET /metrics` — Prometheus-compatible metrics.
-///
-/// # Returns
-/// A configured `axum::Router` instance ready to be served.
-pub fn build_router() -> Router {
+use crate::routes::{
+    apps::{
+        create_app, delete_app, get_app, get_app_logs, get_app_status, list_apps, recreate_app,
+        start_app, stop_app,
+    },
+    health, metrics, version,
+};
+
+/// Builds the API router mounted at `/api/v1`.
+pub fn router() -> Router {
     let allowed_origins = env::var("ALLOWED_ORIGINS")
         .ok()
         .map(|val| {
@@ -52,7 +39,7 @@ pub fn build_router() -> Router {
         }
     };
 
-    let router = Router::new()
+    let api = Router::new()
         .route("/apps", get(list_apps).post(create_app))
         .route("/apps/:name", get(get_app).delete(delete_app))
         .route("/apps/:name/start", post(start_app))
@@ -65,8 +52,8 @@ pub fn build_router() -> Router {
         .route("/metrics", get(metrics))
         .layer(cors);
 
-    if let Some(origins) = allowed_origins {
-        router.layer(from_fn(
+    let api = if let Some(origins) = allowed_origins {
+        api.layer(from_fn(
             move |req: axum::http::Request<Body>, next: Next| {
                 let origins = origins.clone();
                 async move {
@@ -85,6 +72,8 @@ pub fn build_router() -> Router {
             },
         ))
     } else {
-        router
-    }
+        api
+    };
+
+    Router::new().nest("/api/v1", api)
 }

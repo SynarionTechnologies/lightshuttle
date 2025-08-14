@@ -2,16 +2,16 @@ use axum::{
     body::Body,
     http::{Request, StatusCode},
 };
-use lightshuttle_core::app::build_router;
+use lightshuttle_core::api::routes::router;
 use tower::ServiceExt;
 
 #[tokio::test]
 async fn health_works() {
-    let app = build_router();
+    let app = router();
     let response = app
         .oneshot(
             Request::builder()
-                .uri("/health")
+                .uri("/api/v1/health")
                 .body(Body::empty())
                 .unwrap(),
         )

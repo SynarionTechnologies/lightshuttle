@@ -5,7 +5,7 @@ use axum::{
 };
 use http_body_util::BodyExt;
 use lightshuttle_core::{
-    app::build_router,
+    api::routes::router,
     docker::{create_and_run_container, remove_container, ContainerConfig},
 };
 use serde_json::{json, Value};
@@ -24,7 +24,7 @@ async fn post_apps_should_succeed() {
         .args(["rm", "-f", container_name])
         .output();
 
-    let app = build_router();
+    let app = router();
 
     let payload = json!({
         "name": container_name,
@@ -35,7 +35,7 @@ async fn post_apps_should_succeed() {
 
     let request = Request::builder()
         .method("POST")
-        .uri("/apps")
+        .uri("/api/v1/apps")
         .header("Content-Type", "application/json")
         .body(Body::from(payload.to_string()))
         .unwrap();
@@ -81,11 +81,11 @@ async fn post_apps_name_start_should_succeed() {
         ])
         .output();
 
-    let app = build_router();
+    let app = router();
 
     let request = Request::builder()
         .method("POST")
-        .uri(format!("/apps/{container_name}/start"))
+        .uri(format!("/api/v1/apps/{container_name}/start"))
         .body(Body::empty())
         .unwrap();
 
@@ -115,11 +115,11 @@ async fn post_apps_name_start_should_404_on_missing_container() {
 
     let container_name = "this-container-does-not-exist";
 
-    let app = build_router();
+    let app = router();
 
     let request = Request::builder()
         .method("POST")
-        .uri(format!("/apps/{container_name}/start"))
+        .uri(format!("/api/v1/apps/{container_name}/start"))
         .body(Body::empty())
         .unwrap();
 
@@ -156,11 +156,11 @@ async fn post_apps_name_stop_should_succeed() {
         ])
         .output();
 
-    let app = build_router();
+    let app = router();
 
     let request = Request::builder()
         .method("POST")
-        .uri(format!("/apps/{container_name}/stop"))
+        .uri(format!("/api/v1/apps/{container_name}/stop"))
         .body(Body::empty())
         .unwrap();
 
@@ -190,11 +190,11 @@ async fn post_apps_name_stop_should_404_on_missing_container() {
 
     let container_name = "this-container-does-not-exist";
 
-    let app = build_router();
+    let app = router();
 
     let request = Request::builder()
         .method("POST")
-        .uri(format!("/apps/{container_name}/stop"))
+        .uri(format!("/api/v1/apps/{container_name}/stop"))
         .body(Body::empty())
         .unwrap();
 
@@ -229,12 +229,12 @@ async fn post_apps_name_recreate_should_restart_container() {
 
     create_and_run_container(config).expect("Failed to create container");
 
-    let app = build_router();
+    let app = router();
     let response = app
         .oneshot(
             Request::builder()
                 .method("POST")
-                .uri(format!("/apps/{name}/recreate"))
+                .uri(format!("/api/v1/apps/{name}/recreate"))
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -272,10 +272,10 @@ async fn post_apps_should_support_labels() {
         }
     });
 
-    let app = build_router();
+    let app = router();
     let request = Request::builder()
         .method("POST")
-        .uri("/apps")
+        .uri("/api/v1/apps")
         .header("Content-Type", "application/json")
         .body(Body::from(payload.to_string()))
         .unwrap();
@@ -325,10 +325,10 @@ async fn post_apps_should_set_environment_variables() {
         }
     });
 
-    let app = build_router();
+    let app = router();
     let request = Request::builder()
         .method("POST")
-        .uri("/apps")
+        .uri("/api/v1/apps")
         .header("Content-Type", "application/json")
         .body(Body::from(payload.to_string()))
         .unwrap();
@@ -368,10 +368,10 @@ async fn post_apps_should_mount_volume() {
         "volumes": [format!("{host_path}:{container_path}")]
     });
 
-    let app = build_router();
+    let app = router();
     let request = Request::builder()
         .method("POST")
-        .uri("/apps")
+        .uri("/api/v1/apps")
         .header("Content-Type", "application/json")
         .body(Body::from(payload.to_string()))
         .unwrap();
@@ -412,10 +412,10 @@ async fn post_apps_should_apply_restart_policy() {
         "restart_policy": "always"
     });
 
-    let app = build_router();
+    let app = router();
     let request = Request::builder()
         .method("POST")
-        .uri("/apps")
+        .uri("/api/v1/apps")
         .header("Content-Type", "application/json")
         .body(Body::from(payload.to_string()))
         .unwrap();
@@ -463,10 +463,10 @@ async fn post_apps_name_recreate_should_preserve_volumes_and_env() {
         "volumes": [format!("{host_path}:{container_path}")]
     });
 
-    let app = build_router();
+    let app = router();
     let request = Request::builder()
         .method("POST")
-        .uri("/apps")
+        .uri("/api/v1/apps")
         .header("Content-Type", "application/json")
         .body(Body::from(payload.to_string()))
         .unwrap();
@@ -486,7 +486,7 @@ async fn post_apps_name_recreate_should_preserve_volumes_and_env() {
 
     let recreate = Request::builder()
         .method("POST")
-        .uri(format!("/apps/{name}/recreate"))
+        .uri(format!("/api/v1/apps/{name}/recreate"))
         .body(Body::empty())
         .unwrap();
     let response = app.clone().oneshot(recreate).await.unwrap();
@@ -525,10 +525,10 @@ async fn post_apps_should_fail_on_invalid_volume_format() {
         "volumes": [":/data"]
     });
 
-    let app = build_router();
+    let app = router();
     let request = Request::builder()
         .method("POST")
-        .uri("/apps")
+        .uri("/api/v1/apps")
         .header("Content-Type", "application/json")
         .body(Body::from(payload.to_string()))
         .unwrap();
