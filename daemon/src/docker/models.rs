@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
 /// Container creation parameters
 pub struct ContainerConfig<'a> {
@@ -15,7 +16,7 @@ pub struct ContainerConfig<'a> {
 }
 
 /// Represents an application instance (a running Docker container).
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, ToSchema)]
 pub struct AppInstance {
     pub id: u32,
     pub name: String,
@@ -26,7 +27,7 @@ pub struct AppInstance {
 }
 
 /// Represents the status of an application.
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, ToSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum AppStatus {
     Running,

@@ -8,6 +8,7 @@ use axum::{
 use std::{convert::Infallible, env, sync::Arc};
 use tower_http::cors::{Any, CorsLayer};
 
+use crate::openapi::ApiDoc;
 use crate::routes::{
     apps::{
         create_app, delete_app, get_app, get_app_logs, get_app_status, list_apps, recreate_app,
@@ -16,6 +17,8 @@ use crate::routes::{
     health, metrics, version,
 };
 use crate::services::docker::{DockerClient, ShellDockerClient};
+use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
 
 /// Builds the API router mounted at `/api/v1`.
 pub fn router() -> Router {
@@ -78,5 +81,10 @@ pub fn router() -> Router {
         api
     };
 
-    Router::new().nest("/api/v1", api).with_state(docker)
+    let swagger = SwaggerUi::new("/swagger-ui").url("/api-doc/openapi.json", ApiDoc::openapi());
+
+    Router::new()
+        .nest("/api/v1", api)
+        .merge(swagger)
+        .with_state(docker)
 }

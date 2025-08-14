@@ -1,6 +1,7 @@
 mod api;
 mod docker;
 mod errors;
+mod openapi;
 mod routes;
 mod services;
 

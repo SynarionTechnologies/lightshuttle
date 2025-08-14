@@ -11,7 +11,10 @@ use crate::{
 };
 use std::sync::Arc;
 
-use super::{CreateAppRequest, PaginatedResponse, Pagination};
+use super::{
+    AppListResponse, ContainerIdResponse, CreateAppRequest, CreateAppResponse, Pagination,
+    StatusResponse,
+};
 
 /// Handles POST /apps
 ///
@@ -23,6 +26,17 @@ use super::{CreateAppRequest, PaginatedResponse, Pagination};
 /// # Returns
 /// - `201 Created` with container ID if successful.
 /// - `400 Bad Request` with error message if failed.
+#[utoipa::path(
+    post,
+    path = "/apps",
+    tag = "Apps",
+    request_body = CreateAppRequest,
+    responses(
+        (status = 201, description = "App created", body = CreateAppResponse),
+        (status = 400, description = "Bad request", body = crate::errors::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::errors::ErrorResponse)
+    )
+)]
 pub async fn create_app(
     State(docker): State<Arc<dyn DockerClient>>,
     Json(payload): Json<CreateAppRequest>,
@@ -41,10 +55,10 @@ pub async fn create_app(
     let container_id = docker.run(config)?;
     Ok((
         StatusCode::CREATED,
-        Json(serde_json::json!({
-            "status": "success",
-            "container_id": container_id
-        })),
+        Json(CreateAppResponse {
+            status: "success".to_string(),
+            container_id,
+        }),
     ))
 }
 
@@ -56,6 +70,17 @@ pub async fn create_app(
 /// - `200 OK` if the container was started
 /// - `404 Not Found` if the container doesn't exist
 /// - `500 Internal Server Error` otherwise
+#[utoipa::path(
+    post,
+    path = "/apps/{name}/start",
+    tag = "Apps",
+    params(("name", Path, description = "Container name")),
+    responses(
+        (status = 200, description = "App started"),
+        (status = 404, description = "App not found", body = crate::errors::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::errors::ErrorResponse)
+    )
+)]
 pub async fn start_app(
     State(docker): State<Arc<dyn DockerClient>>,
     Path(name): Path<String>,
@@ -72,6 +97,17 @@ pub async fn start_app(
 /// - `200 OK` if the container was stopped
 /// - `404 Not Found` if the container doesn't exist
 /// - `500 Internal Server Error` otherwise
+#[utoipa::path(
+    post,
+    path = "/apps/{name}/stop",
+    tag = "Apps",
+    params(("name", Path, description = "Container name")),
+    responses(
+        (status = 200, description = "App stopped"),
+        (status = 404, description = "App not found", body = crate::errors::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::errors::ErrorResponse)
+    )
+)]
 pub async fn stop_app(
     State(docker): State<Arc<dyn DockerClient>>,
     Path(name): Path<String>,
@@ -88,15 +124,23 @@ pub async fn stop_app(
 /// - `200 OK` with new container ID
 /// - `404 Not Found` if container doesn't exist
 /// - `500 Internal Server Error` otherwise
+#[utoipa::path(
+    post,
+    path = "/apps/{name}/recreate",
+    tag = "Apps",
+    params(("name", Path, description = "Container name")),
+    responses(
+        (status = 200, description = "App recreated", body = ContainerIdResponse),
+        (status = 404, description = "App not found", body = crate::errors::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::errors::ErrorResponse)
+    )
+)]
 pub async fn recreate_app(
     State(docker): State<Arc<dyn DockerClient>>,
     Path(name): Path<String>,
 ) -> Result<impl IntoResponse, Error> {
     let container_id = docker::recreate_container(docker.as_ref(), &name)?;
-    Ok((
-        StatusCode::OK,
-        Json(serde_json::json!({ "container_id": container_id })),
-    ))
+    Ok((StatusCode::OK, Json(ContainerIdResponse { container_id })))
 }
 
 /// Handles GET /apps
@@ -110,6 +154,16 @@ pub async fn recreate_app(
 /// - `200 OK` with paginated list of applications.
 /// - `200 OK` with an empty list if Docker is unavailable.
 /// - `500 Internal Server Error` on unexpected errors.
+#[utoipa::path(
+    get,
+    path = "/apps",
+    tag = "Apps",
+    params(Pagination),
+    responses(
+        (status = 200, description = "List running apps", body = AppListResponse),
+        (status = 500, description = "Internal server error", body = crate::errors::ErrorResponse)
+    )
+)]
 pub async fn list_apps(Query(pagination): Query<Pagination>) -> Result<impl IntoResponse, Error> {
     let all_apps = match docker::get_running_containers() {
         Ok(apps) => apps,
@@ -140,7 +194,7 @@ pub async fn list_apps(Query(pagination): Query<Pagination>) -> Result<impl Into
         filtered[start..end].to_vec()
     };
 
-    let response = PaginatedResponse {
+    let response = AppListResponse {
         total,
         page,
         limit,
@@ -159,6 +213,17 @@ pub async fn list_apps(Query(pagination): Query<Pagination>) -> Result<impl Into
 /// - `200 OK` with app details if found
 /// - `404 Not Found` if the app does not exist
 /// - `500 Internal Server Error` if Docker command fails
+#[utoipa::path(
+    get,
+    path = "/apps/{name}",
+    tag = "Apps",
+    params(("name", Path, description = "Container name")),
+    responses(
+        (status = 200, description = "App details", body = crate::docker::models::AppInstance),
+        (status = 404, description = "App not found", body = crate::errors::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::errors::ErrorResponse)
+    )
+)]
 pub async fn get_app(
     State(docker): State<Arc<dyn DockerClient>>,
     Path(name): Path<String>,
@@ -177,6 +242,17 @@ pub async fn get_app(
 /// - `200 OK` with the logs as plain text.
 /// - `404 Not Found` if the container does not exist.
 /// - `500 Internal Server Error` if fetching logs fails.
+#[utoipa::path(
+    get,
+    path = "/apps/{name}/logs",
+    tag = "Apps",
+    params(("name", Path, description = "Container name")),
+    responses(
+        (status = 200, description = "Container logs", content_type = "text/plain", body = String),
+        (status = 404, description = "App not found", body = crate::errors::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::errors::ErrorResponse)
+    )
+)]
 pub async fn get_app_logs(Path(name): Path<String>) -> Result<Response, Error> {
     let logs = docker::get_container_logs(&name)?;
     Ok((StatusCode::OK, [(header::CONTENT_TYPE, "text/plain")], logs).into_response())
@@ -190,12 +266,23 @@ pub async fn get_app_logs(Path(name): Path<String>) -> Result<Response, Error> {
 /// - `200 OK` with JSON { status }
 /// - `404 Not Found` if the container doesn't exist
 /// - `500 Internal Server Error` on error
+#[utoipa::path(
+    get,
+    path = "/apps/{name}/status",
+    tag = "Apps",
+    params(("name", Path, description = "Container name")),
+    responses(
+        (status = 200, description = "App status", body = StatusResponse),
+        (status = 404, description = "App not found", body = crate::errors::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::errors::ErrorResponse)
+    )
+)]
 pub async fn get_app_status(
     State(docker): State<Arc<dyn DockerClient>>,
     Path(name): Path<String>,
 ) -> Result<impl IntoResponse, Error> {
     let state = docker::get_container_status(docker.as_ref(), &name)?;
-    Ok((StatusCode::OK, Json(serde_json::json!({ "status": state }))))
+    Ok((StatusCode::OK, Json(StatusResponse { status: state })))
 }
 
 /// Deletes an application/container by its name.
@@ -207,6 +294,17 @@ pub async fn get_app_status(
 /// - `204 No Content` if deleted successfully
 /// - `404 Not Found` if container doesn't exist
 /// - `500 Internal Server Error` if something went wrong
+#[utoipa::path(
+    delete,
+    path = "/apps/{name}",
+    tag = "Apps",
+    params(("name", Path, description = "Container name")),
+    responses(
+        (status = 204, description = "App deleted"),
+        (status = 404, description = "App not found", body = crate::errors::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::errors::ErrorResponse)
+    )
+)]
 pub async fn delete_app(Path(name): Path<String>) -> Result<impl IntoResponse, Error> {
     docker::remove_container(&name)?;
     Ok(StatusCode::NO_CONTENT)

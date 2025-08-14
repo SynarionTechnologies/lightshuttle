@@ -1,6 +1,8 @@
 use axum::response::{IntoResponse, Response};
 use axum::{http::StatusCode, Json};
+use serde::Serialize;
 use thiserror::Error;
+use utoipa::ToSchema;
 
 /// Defines all the possible errors for the LightShuttle daemon service.
 #[derive(Error, Debug)]
@@ -24,6 +26,12 @@ pub enum Error {
     BadRequest(String),
 }
 
+/// Standard error response body.
+#[derive(Serialize, ToSchema)]
+pub struct ErrorResponse {
+    pub error: String,
+}
+
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
         let status = match self {
@@ -34,9 +42,9 @@ impl IntoResponse for Error {
             Error::InvalidRequest(_) => StatusCode::BAD_REQUEST,
             Error::BadRequest(_) => StatusCode::BAD_REQUEST,
         };
-        let body = Json(serde_json::json!({
-            "error": self.to_string(),
-        }));
+        let body = Json(ErrorResponse {
+            error: self.to_string(),
+        });
 
         (status, body).into_response()
     }

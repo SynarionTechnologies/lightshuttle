@@ -1,0 +1,582 @@
+openapi: 3.1.0
+info:
+  title: lightshuttle_core
+  description: ''
+  license:
+    name: ''
+  version: 0.3.0
+paths:
+  /apps:
+    get:
+      tags:
+      - Apps
+      summary: Handles GET /apps
+      description: |-
+        Lists running containers, paginated.
+
+        # Arguments
+        - `pagination`: Query parameters `page` and `limit`.
+
+        # Returns
+        - `200 OK` with paginated list of applications.
+        - `200 OK` with an empty list if Docker is unavailable.
+        - `500 Internal Server Error` on unexpected errors.
+      operationId: list_apps
+      parameters:
+      - name: page
+        in: path
+        required: true
+        schema:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+      - name: limit
+        in: path
+        required: true
+        schema:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+      - name: search
+        in: path
+        required: true
+        schema:
+          type:
+          - string
+          - 'null'
+      responses:
+        '200':
+          description: List running apps
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppListResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+      - Apps
+      summary: Handles POST /apps
+      description: |-
+        Launches a new container based on the provided configuration.
+
+        # Arguments
+        - `payload`: JSON body containing app creation parameters.
+
+        # Returns
+        - `201 Created` with container ID if successful.
+        - `400 Bad Request` with error message if failed.
+      operationId: create_app
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAppRequest'
+        required: true
+      responses:
+        '201':
+          description: App created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateAppResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /apps/{name}:
+    get:
+      tags:
+      - Apps
+      summary: Retrieve a specific running app by its container name.
+      description: |-
+        # Path Parameters
+        - `name`: The Docker container name.
+
+        # Returns
+        - `200 OK` with app details if found
+        - `404 Not Found` if the app does not exist
+        - `500 Internal Server Error` if Docker command fails
+      operationId: get_app
+      parameters:
+      - name: name
+        in: path
+        description: Container name
+        required: true
+      responses:
+        '200':
+          description: App details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppInstance'
+        '404':
+          description: App not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+      - Apps
+      summary: Deletes an application/container by its name.
+      description: |-
+        # Arguments
+        - `name`: The container name to delete.
+
+        # Returns
+        - `204 No Content` if deleted successfully
+        - `404 Not Found` if container doesn't exist
+        - `500 Internal Server Error` if something went wrong
+      operationId: delete_app
+      parameters:
+      - name: name
+        in: path
+        description: Container name
+        required: true
+      responses:
+        '204':
+          description: App deleted
+        '404':
+          description: App not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /apps/{name}/logs:
+    get:
+      tags:
+      - Apps
+      summary: Retrieve the logs of a running container.
+      description: |-
+        # Path Parameters
+        - `name`: The Docker container name.
+
+        # Returns
+        - `200 OK` with the logs as plain text.
+        - `404 Not Found` if the container does not exist.
+        - `500 Internal Server Error` if fetching logs fails.
+      operationId: get_app_logs
+      parameters:
+      - name: name
+        in: path
+        description: Container name
+        required: true
+      responses:
+        '200':
+          description: Container logs
+          content:
+            text/plain:
+              schema:
+                type: string
+        '404':
+          description: App not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /apps/{name}/recreate:
+    post:
+      tags:
+      - Apps
+      summary: Handles POST /apps/:name/recreate
+      description: |-
+        Recreates a container using its original config (image, ports, labels).
+
+        # Returns
+        - `200 OK` with new container ID
+        - `404 Not Found` if container doesn't exist
+        - `500 Internal Server Error` otherwise
+      operationId: recreate_app
+      parameters:
+      - name: name
+        in: path
+        description: Container name
+        required: true
+      responses:
+        '200':
+          description: App recreated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContainerIdResponse'
+        '404':
+          description: App not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /apps/{name}/start:
+    post:
+      tags:
+      - Apps
+      summary: Handles POST /apps/:name/start
+      description: |-
+        Starts an existing container by name.
+
+        # Returns
+        - `200 OK` if the container was started
+        - `404 Not Found` if the container doesn't exist
+        - `500 Internal Server Error` otherwise
+      operationId: start_app
+      parameters:
+      - name: name
+        in: path
+        description: Container name
+        required: true
+      responses:
+        '200':
+          description: App started
+        '404':
+          description: App not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /apps/{name}/status:
+    get:
+      tags:
+      - Apps
+      summary: Handles GET /apps/:name/status
+      description: |-
+        Returns the status of a container (`running`, `exited`, etc.)
+
+        # Returns
+        - `200 OK` with JSON { status }
+        - `404 Not Found` if the container doesn't exist
+        - `500 Internal Server Error` on error
+      operationId: get_app_status
+      parameters:
+      - name: name
+        in: path
+        description: Container name
+        required: true
+      responses:
+        '200':
+          description: App status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+        '404':
+          description: App not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /apps/{name}/stop:
+    post:
+      tags:
+      - Apps
+      summary: Handles POST /apps/:name/stop
+      description: |-
+        Stops a running container by name.
+
+        # Returns
+        - `200 OK` if the container was stopped
+        - `404 Not Found` if the container doesn't exist
+        - `500 Internal Server Error` otherwise
+      operationId: stop_app
+      parameters:
+      - name: name
+        in: path
+        description: Container name
+        required: true
+      responses:
+        '200':
+          description: App stopped
+        '404':
+          description: App not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /health:
+    get:
+      tags:
+      - Health
+      operationId: health
+      responses:
+        '200':
+          description: API health status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+  /metrics:
+    get:
+      tags:
+      - Metrics
+      operationId: metrics
+      responses:
+        '200':
+          description: Service metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetricsResponse'
+  /version:
+    get:
+      tags:
+      - Version
+      operationId: version
+      responses:
+        '200':
+          description: Service version
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionResponse'
+components:
+  schemas:
+    AppInstance:
+      type: object
+      description: Represents an application instance (a running Docker container).
+      required:
+      - id
+      - name
+      - status
+      - image
+      - ports
+      - created_at
+      properties:
+        created_at:
+          type: string
+        id:
+          type: integer
+          format: int32
+          minimum: 0
+        image:
+          type: string
+        name:
+          type: string
+        ports:
+          type: array
+          items:
+            type: integer
+            format: int32
+            minimum: 0
+        status:
+          $ref: '#/components/schemas/AppStatus'
+    AppListResponse:
+      type: object
+      description: Standard response format for paginated lists.
+      required:
+      - total
+      - page
+      - limit
+      - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AppInstance'
+        limit:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 0
+        total:
+          type: integer
+          minimum: 0
+    AppStatus:
+      type: string
+      description: Represents the status of an application.
+      enum:
+      - running
+      - stopped
+      - error
+    ContainerIdResponse:
+      type: object
+      description: Response containing only a container identifier.
+      required:
+      - container_id
+      properties:
+        container_id:
+          type: string
+    CreateAppRequest:
+      type: object
+      description: Request payload for creating a new application/container.
+      required:
+      - name
+      - image
+      - ports
+      - container_port
+      properties:
+        container_port:
+          type: integer
+          format: int32
+          minimum: 0
+        env:
+          type:
+          - object
+          - 'null'
+          additionalProperties:
+            type: string
+          propertyNames:
+            type: string
+        image:
+          type: string
+        labels:
+          type:
+          - object
+          - 'null'
+          additionalProperties:
+            type: string
+          propertyNames:
+            type: string
+        name:
+          type: string
+        ports:
+          type: array
+          items:
+            type: integer
+            format: int32
+            minimum: 0
+        restart_policy:
+          type:
+          - string
+          - 'null'
+        volumes:
+          type:
+          - array
+          - 'null'
+          items:
+            type: string
+    CreateAppResponse:
+      type: object
+      description: Response body returned when creating a new application.
+      required:
+      - status
+      - container_id
+      properties:
+        container_id:
+          type: string
+        status:
+          type: string
+    ErrorResponse:
+      type: object
+      description: Standard error response body.
+      required:
+      - error
+      properties:
+        error:
+          type: string
+    HealthResponse:
+      type: object
+      required:
+      - status
+      properties:
+        status:
+          type: string
+    MetricsResponse:
+      type: object
+      required:
+      - uptime
+      - requests_handled
+      properties:
+        requests_handled:
+          type: integer
+          format: int32
+          minimum: 0
+        uptime:
+          type: string
+    Pagination:
+      type: object
+      description: Pagination parameters for listing applications.
+      properties:
+        limit:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        page:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        search:
+          type:
+          - string
+          - 'null'
+    StatusResponse:
+      type: object
+      description: Generic status response body.
+      required:
+      - status
+      properties:
+        status:
+          type: string
+    VersionResponse:
+      type: object
+      required:
+      - version
+      properties:
+        version:
+          type: string
+tags:
+- name: Apps
+  description: Application management
+- name: Health
+  description: Health check
+- name: Metrics
+  description: Service metrics
+- name: Version
+  description: Service version
