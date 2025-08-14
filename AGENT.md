@@ -25,6 +25,11 @@ outlined below.
 - Dynamic variables are wrapped in `{{curly_braces}}`.
 - Each prompt has its own page under `/docs/fr/prompts/` and `/docs/en/prompts/`.
 
+## Changelog
+- Record every change in `CHANGELOG.md` under the `[Unreleased]` section.
+- Categorise entries under **Added**, **Changed** and **Removed**.
+- Keep entries brief; you'll be told when to move them to a release section.
+
 ## Good practices
 1. **FR/EN coherence** – always update both languages.
 2. **Living glossary** – never forget to add new terms.
@@ -35,5 +40,6 @@ outlined below.
 7. **Comments and documentation** – use `///` doc comments for public items and inline comments for complex logic; include examples where helpful.
 8. **Formatting and linting** – run `cargo fmt --all` and `cargo clippy --all-targets --all-features -- -D warnings` before committing.
 9. **Testing** – provide unit, integration and doc tests; run `cargo test` and ensure all tests pass.
+10. **Feature flags** – gate unfinished or optional features behind Cargo feature flags (TBD) so they stay disabled until ready.
 
 ---
