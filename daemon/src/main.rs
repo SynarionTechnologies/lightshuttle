@@ -37,10 +37,8 @@ async fn main() {
         });
 
     // Start serving using axum
-    axum::serve(listener, router())
-        .await
-        .unwrap_or_else(|e| {
-            tracing::error!("Server crashed: {e}");
-            std::process::exit(1);
-        });
+    axum::serve(listener, router()).await.unwrap_or_else(|e| {
+        tracing::error!("Server crashed: {e}");
+        std::process::exit(1);
+    });
 }

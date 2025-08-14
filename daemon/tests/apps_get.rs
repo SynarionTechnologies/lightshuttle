@@ -14,7 +14,12 @@ use tower::ServiceExt;
 async fn apps_basic_returns_ok() {
     let app = router();
     let response = app
-        .oneshot(Request::builder().uri("/api/v1/apps").body(Body::empty()).unwrap())
+        .oneshot(
+            Request::builder()
+                .uri("/api/v1/apps")
+                .body(Body::empty())
+                .unwrap(),
+        )
         .await
         .unwrap();
 

@@ -53,22 +53,24 @@ pub fn router() -> Router {
         .layer(cors);
 
     let api = if let Some(origins) = allowed_origins {
-        api.layer(from_fn(move |req: axum::http::Request<Body>, next: Next| {
-            let origins = origins.clone();
-            async move {
-                if let Some(origin) = req.headers().get(header::ORIGIN) {
-                    if !origins.contains(origin) {
-                        return Ok::<_, Infallible>(
-                            axum::response::Response::builder()
-                                .status(StatusCode::FORBIDDEN)
-                                .body(Body::empty())
-                                .unwrap(),
-                        );
+        api.layer(from_fn(
+            move |req: axum::http::Request<Body>, next: Next| {
+                let origins = origins.clone();
+                async move {
+                    if let Some(origin) = req.headers().get(header::ORIGIN) {
+                        if !origins.contains(origin) {
+                            return Ok::<_, Infallible>(
+                                axum::response::Response::builder()
+                                    .status(StatusCode::FORBIDDEN)
+                                    .body(Body::empty())
+                                    .unwrap(),
+                            );
+                        }
                     }
+                    Ok::<_, Infallible>(next.run(req).await)
                 }
-                Ok::<_, Infallible>(next.run(req).await)
-            }
-        }))
+            },
+        ))
     } else {
         api
     };
