@@ -5,7 +5,7 @@ use axum::{
     routing::{get, post},
     Router,
 };
-use std::{convert::Infallible, env};
+use std::{convert::Infallible, env, sync::Arc};
 use tower_http::cors::{Any, CorsLayer};
 
 use crate::routes::{
@@ -15,9 +15,11 @@ use crate::routes::{
     },
     health, metrics, version,
 };
+use crate::services::docker::{DockerClient, ShellDockerClient};
 
 /// Builds the API router mounted at `/api/v1`.
 pub fn router() -> Router {
+    let docker: Arc<dyn DockerClient> = Arc::new(ShellDockerClient);
     let allowed_origins = env::var("ALLOWED_ORIGINS")
         .ok()
         .map(|val| {
@@ -50,7 +52,8 @@ pub fn router() -> Router {
         .route("/health", get(health))
         .route("/version", get(version))
         .route("/metrics", get(metrics))
-        .layer(cors);
+        .layer(cors)
+        .with_state(docker.clone());
 
     let api = if let Some(origins) = allowed_origins {
         api.layer(from_fn(
@@ -75,5 +78,5 @@ pub fn router() -> Router {
         api
     };
 
-    Router::new().nest("/api/v1", api)
+    Router::new().nest("/api/v1", api).with_state(docker)
 }

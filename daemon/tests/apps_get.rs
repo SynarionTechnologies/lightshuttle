@@ -5,7 +5,8 @@ use axum::{
 use http_body_util::BodyExt;
 use lightshuttle_core::{
     api::routes::router,
-    docker::{create_and_run_container, remove_container, ContainerConfig},
+    docker::{remove_container, ContainerConfig},
+    services::docker::{DockerClient, ShellDockerClient},
 };
 use serde_json::Value;
 use tower::ServiceExt;
@@ -69,7 +70,8 @@ async fn apps_search_filter_should_return_matching_container() {
         restart_policy: None,
     };
 
-    create_and_run_container(config).expect("Failed to create container");
+    let docker = ShellDockerClient;
+    docker.run(config).expect("Failed to create container");
 
     let app = router();
     let response = app
@@ -137,7 +139,8 @@ async fn get_existing_app_should_succeed() {
         restart_policy: None,
     };
 
-    create_and_run_container(config).expect("Failed to create container");
+    let docker = ShellDockerClient;
+    docker.run(config).expect("Failed to create container");
     let app = router();
     let response = app
         .oneshot(
@@ -208,7 +211,8 @@ async fn get_logs_should_succeed() {
         restart_policy: None,
     };
 
-    create_and_run_container(config).expect("Failed to create container");
+    let docker = ShellDockerClient;
+    docker.run(config).expect("Failed to create container");
 
     let app = router();
     let response = app
@@ -255,7 +259,8 @@ async fn get_app_status_should_return_running() {
         restart_policy: None,
     };
 
-    create_and_run_container(config).expect("Failed to create container");
+    let docker = ShellDockerClient;
+    docker.run(config).expect("Failed to create container");
 
     let app = router();
 
