@@ -6,7 +6,8 @@ use axum::{
 use http_body_util::BodyExt;
 use lightshuttle_core::{
     api::routes::router,
-    docker::{create_and_run_container, remove_container, ContainerConfig},
+    docker::{remove_container, ContainerConfig},
+    services::docker::{DockerClient, ShellDockerClient},
 };
 use serde_json::{json, Value};
 use tower::ServiceExt;
@@ -227,7 +228,8 @@ async fn post_apps_name_recreate_should_restart_container() {
         restart_policy: None,
     };
 
-    create_and_run_container(config).expect("Failed to create container");
+    let docker = ShellDockerClient;
+    docker.run(config).expect("Failed to create container");
 
     let app = router();
     let response = app

@@ -1,6 +1,9 @@
 use std::env;
 
-use lightshuttle_core::docker::{create_and_run_container, ContainerConfig};
+use lightshuttle_core::{
+    docker::ContainerConfig,
+    services::docker::{DockerClient, ShellDockerClient},
+};
 
 #[tokio::test]
 async fn test_launch_container_via_cli() {
@@ -20,7 +23,8 @@ async fn test_launch_container_via_cli() {
         restart_policy: None,
     };
 
-    match create_and_run_container(config) {
+    let docker = ShellDockerClient;
+    match docker.run(config) {
         Ok(container_id) => {
             println!("✅ Launched container: {container_id}");
             assert!(!container_id.is_empty());

@@ -1,17 +1,17 @@
 use axum::{
-    extract::{Json, Path, Query},
+    extract::{Json, Path, Query, State},
     http::{header, StatusCode},
     response::{IntoResponse, Response},
 };
 
 use crate::{
-    docker::{self, container},
+    docker::{self, ContainerConfig},
     errors::Error,
+    services::docker::DockerClient,
 };
+use std::sync::Arc;
 
 use super::{CreateAppRequest, PaginatedResponse, Pagination};
-
-use crate::docker::ContainerConfig;
 
 /// Handles POST /apps
 ///
@@ -23,7 +23,10 @@ use crate::docker::ContainerConfig;
 /// # Returns
 /// - `201 Created` with container ID if successful.
 /// - `400 Bad Request` with error message if failed.
-pub async fn create_app(Json(payload): Json<CreateAppRequest>) -> Result<impl IntoResponse, Error> {
+pub async fn create_app(
+    State(docker): State<Arc<dyn DockerClient>>,
+    Json(payload): Json<CreateAppRequest>,
+) -> Result<impl IntoResponse, Error> {
     let config = ContainerConfig {
         name: &payload.name,
         image: &payload.image,
@@ -35,7 +38,7 @@ pub async fn create_app(Json(payload): Json<CreateAppRequest>) -> Result<impl In
         restart_policy: payload.restart_policy.as_deref(),
     };
 
-    let container_id = docker::create_and_run_container(config)?;
+    let container_id = docker.run(config)?;
     Ok((
         StatusCode::CREATED,
         Json(serde_json::json!({
@@ -53,8 +56,11 @@ pub async fn create_app(Json(payload): Json<CreateAppRequest>) -> Result<impl In
 /// - `200 OK` if the container was started
 /// - `404 Not Found` if the container doesn't exist
 /// - `500 Internal Server Error` otherwise
-pub async fn start_app(Path(name): Path<String>) -> Result<impl IntoResponse, Error> {
-    container::start_container(&name)?;
+pub async fn start_app(
+    State(docker): State<Arc<dyn DockerClient>>,
+    Path(name): Path<String>,
+) -> Result<impl IntoResponse, Error> {
+    docker.start(&name)?;
     Ok(StatusCode::OK)
 }
 
@@ -66,8 +72,11 @@ pub async fn start_app(Path(name): Path<String>) -> Result<impl IntoResponse, Er
 /// - `200 OK` if the container was stopped
 /// - `404 Not Found` if the container doesn't exist
 /// - `500 Internal Server Error` otherwise
-pub async fn stop_app(Path(name): Path<String>) -> Result<impl IntoResponse, Error> {
-    container::stop_container(&name)?;
+pub async fn stop_app(
+    State(docker): State<Arc<dyn DockerClient>>,
+    Path(name): Path<String>,
+) -> Result<impl IntoResponse, Error> {
+    docker.stop(&name)?;
     Ok(StatusCode::OK)
 }
 
@@ -79,8 +88,11 @@ pub async fn stop_app(Path(name): Path<String>) -> Result<impl IntoResponse, Err
 /// - `200 OK` with new container ID
 /// - `404 Not Found` if container doesn't exist
 /// - `500 Internal Server Error` otherwise
-pub async fn recreate_app(Path(name): Path<String>) -> Result<impl IntoResponse, Error> {
-    let container_id = container::recreate_container(&name)?;
+pub async fn recreate_app(
+    State(docker): State<Arc<dyn DockerClient>>,
+    Path(name): Path<String>,
+) -> Result<impl IntoResponse, Error> {
+    let container_id = docker::recreate_container(docker.as_ref(), &name)?;
     Ok((
         StatusCode::OK,
         Json(serde_json::json!({ "container_id": container_id })),
@@ -147,8 +159,12 @@ pub async fn list_apps(Query(pagination): Query<Pagination>) -> Result<impl Into
 /// - `200 OK` with app details if found
 /// - `404 Not Found` if the app does not exist
 /// - `500 Internal Server Error` if Docker command fails
-pub async fn get_app(Path(name): Path<String>) -> Result<impl IntoResponse, Error> {
-    let app = docker::get_container_by_name(&name)?.ok_or(Error::ContainerNotFound)?;
+pub async fn get_app(
+    State(docker): State<Arc<dyn DockerClient>>,
+    Path(name): Path<String>,
+) -> Result<impl IntoResponse, Error> {
+    let app =
+        docker::get_container_by_name(docker.as_ref(), &name)?.ok_or(Error::ContainerNotFound)?;
     Ok((StatusCode::OK, Json(app)))
 }
 
@@ -174,8 +190,11 @@ pub async fn get_app_logs(Path(name): Path<String>) -> Result<Response, Error> {
 /// - `200 OK` with JSON { status }
 /// - `404 Not Found` if the container doesn't exist
 /// - `500 Internal Server Error` on error
-pub async fn get_app_status(Path(name): Path<String>) -> Result<impl IntoResponse, Error> {
-    let state = container::get_container_status(&name)?;
+pub async fn get_app_status(
+    State(docker): State<Arc<dyn DockerClient>>,
+    Path(name): Path<String>,
+) -> Result<impl IntoResponse, Error> {
+    let state = docker::get_container_status(docker.as_ref(), &name)?;
     Ok((StatusCode::OK, Json(serde_json::json!({ "status": state }))))
 }
 

@@ -2,6 +2,7 @@ mod api;
 mod docker;
 mod errors;
 mod routes;
+mod services;
 
 use api::routes::router;
 use std::net::SocketAddr;
