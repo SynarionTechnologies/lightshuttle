@@ -2,16 +2,16 @@ use axum::{
     body::Body,
     http::{Request, StatusCode},
 };
-use lightshuttle_core::app::build_router;
+use lightshuttle_core::api::routes::router;
 use tower::ServiceExt;
 
 #[tokio::test]
 async fn metrics_works() {
-    let app = build_router();
+    let app = router();
     let response = app
         .oneshot(
             Request::builder()
-                .uri("/metrics")
+                .uri("/api/v1/metrics")
                 .body(Body::empty())
                 .unwrap(),
         )

@@ -3,13 +3,13 @@ use axum::{
     body::Body,
     http::{Request, StatusCode},
 };
-use lightshuttle_core::app::build_router;
+use lightshuttle_core::api::routes::router;
 use serde_json::Value;
 use tower::ServiceExt;
 
 #[tokio::test]
 async fn create_app_invalid_volume_returns_error_message() {
-    let app = build_router();
+    let app = router();
 
     let payload = serde_json::json!({
         "name": "bad-volume",
@@ -21,7 +21,7 @@ async fn create_app_invalid_volume_returns_error_message() {
 
     let request = Request::builder()
         .method("POST")
-        .uri("/apps")
+        .uri("/api/v1/apps")
         .header("Content-Type", "application/json")
         .body(Body::from(payload.to_string()))
         .unwrap();

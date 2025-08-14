@@ -2,18 +2,18 @@ use axum::{
     body::Body,
     http::{header, Request, StatusCode},
 };
-use lightshuttle_core::app::build_router;
+use lightshuttle_core::api::routes::router;
 use tower::ServiceExt;
 
 #[tokio::test]
 async fn rejects_disallowed_origin() {
     std::env::set_var("ALLOWED_ORIGINS", "https://allowed.example");
-    let app = build_router();
+    let app = router();
 
     let response = app
         .oneshot(
             Request::builder()
-                .uri("/health")
+                .uri("/api/v1/health")
                 .header(header::ORIGIN, "https://notallowed.example")
                 .body(Body::empty())
                 .unwrap(),
@@ -28,12 +28,12 @@ async fn rejects_disallowed_origin() {
 #[tokio::test]
 async fn accepts_allowed_origin() {
     std::env::set_var("ALLOWED_ORIGINS", "https://allowed.example");
-    let app = build_router();
+    let app = router();
 
     let response = app
         .oneshot(
             Request::builder()
-                .uri("/health")
+                .uri("/api/v1/health")
                 .header(header::ORIGIN, "https://allowed.example")
                 .body(Body::empty())
                 .unwrap(),
