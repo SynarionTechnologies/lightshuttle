@@ -58,7 +58,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ApiError'
     post:
       tags:
       - Apps
@@ -91,13 +91,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ApiError'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ApiError'
   /apps/{name}:
     get:
       tags:
@@ -129,13 +129,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ApiError'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ApiError'
     delete:
       tags:
       - Apps
@@ -162,13 +162,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ApiError'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ApiError'
   /apps/{name}/logs:
     get:
       tags:
@@ -200,13 +200,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ApiError'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ApiError'
   /apps/{name}/recreate:
     post:
       tags:
@@ -237,13 +237,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ApiError'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ApiError'
   /apps/{name}/start:
     post:
       tags:
@@ -270,13 +270,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ApiError'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ApiError'
   /apps/{name}/status:
     get:
       tags:
@@ -307,13 +307,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ApiError'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ApiError'
   /apps/{name}/stop:
     post:
       tags:
@@ -340,13 +340,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ApiError'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ApiError'
   /health:
     get:
       tags:
@@ -511,14 +511,24 @@ components:
           type: string
         status:
           type: string
-    ErrorResponse:
+    ApiError:
       type: object
-      description: Standard error response body.
+      description: Structured API error response.
       required:
-      - error
+      - trace_id
+      - code
+      - message
       properties:
-        error:
+        trace_id:
           type: string
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        details:
+          type: string
+          nullable: true
     HealthResponse:
       type: object
       required:

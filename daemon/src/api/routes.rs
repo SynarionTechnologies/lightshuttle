@@ -8,6 +8,7 @@ use axum::{
 use std::{convert::Infallible, env, sync::Arc};
 use tower_http::cors::{Any, CorsLayer};
 
+use crate::api::error::trace_id_middleware;
 use crate::routes::{
     apps::{
         create_app, delete_app, get_app, get_app_logs, get_app_status, list_apps, recreate_app,
@@ -86,6 +87,7 @@ pub fn router() -> Router {
     };
 
     let app = Router::new().nest("/api/v1", api).with_state(docker);
+    let app = app.layer(from_fn(trace_id_middleware));
 
     #[cfg(all(feature = "openapi", debug_assertions))]
     let app =

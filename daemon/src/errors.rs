@@ -1,6 +1,6 @@
+use crate::api::error::{ApiError, TRACE_ID};
+use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use axum::{http::StatusCode, Json};
-use serde::Serialize;
 use thiserror::Error;
 
 /// Defines all the possible errors for the LightShuttle daemon service.
@@ -25,27 +25,48 @@ pub enum Error {
     BadRequest(String),
 }
 
-/// Standard error response body.
-#[derive(Serialize)]
-#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
-pub struct ErrorResponse {
-    pub error: String,
-}
-
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
-        let status = match self {
-            Error::ContainerNotFound => StatusCode::NOT_FOUND,
-            Error::DockerCommandFailed => StatusCode::INTERNAL_SERVER_ERROR,
-            Error::DockerOutputParse(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            Error::Unexpected(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            Error::InvalidRequest(_) => StatusCode::BAD_REQUEST,
-            Error::BadRequest(_) => StatusCode::BAD_REQUEST,
+        let (status, message, details) = match self {
+            Error::ContainerNotFound => (
+                StatusCode::NOT_FOUND,
+                "Container not found".to_string(),
+                None,
+            ),
+            Error::DockerCommandFailed => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Docker command execution failed".to_string(),
+                None,
+            ),
+            Error::DockerOutputParse(detail) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Docker output parsing failed".to_string(),
+                Some(detail),
+            ),
+            Error::Unexpected(detail) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Unexpected error".to_string(),
+                Some(detail),
+            ),
+            Error::InvalidRequest(detail) => (
+                StatusCode::BAD_REQUEST,
+                "Invalid request".to_string(),
+                Some(detail),
+            ),
+            Error::BadRequest(detail) => (
+                StatusCode::BAD_REQUEST,
+                "Invalid input".to_string(),
+                Some(detail),
+            ),
         };
-        let body = Json(ErrorResponse {
-            error: self.to_string(),
-        });
 
-        (status, body).into_response()
+        let trace_id = TRACE_ID.with(|id| id.clone());
+        ApiError {
+            trace_id,
+            code: status.as_u16(),
+            message,
+            details,
+        }
+        .into_response()
     }
 }
