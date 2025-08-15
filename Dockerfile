@@ -27,12 +27,13 @@
     
     COPY --from=builder /app/target/release/lightshuttle_core /usr/local/bin/lightshuttle
     COPY --from=dockercli /usr/bin/docker /usr/local/bin/docker
+    COPY seccomp-profile.json /seccomp.json
     
     RUN useradd -m -u 1000 lightshuttle
     USER lightshuttle
     
     ENV BIND_ADDRESS=0.0.0.0:7878
     EXPOSE 7878
-    
+
     CMD ["lightshuttle"]
     
