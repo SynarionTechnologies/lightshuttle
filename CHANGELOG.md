@@ -14,9 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 📝 Documented changelog tracking and feature flag usage in `AGENT.md`
 - 📘 OpenAPI docs and Swagger UI covering Apps, Health, Metrics and Version endpoints
 - 🆔 Structured `ApiError` responses with per-request trace IDs
+- 🌐 `DOCKER_HOST` env var for proxy configuration
+- 🛡️ Default seccomp profile embedded in Docker image and applied to containers
+- 📚 Proxy usage documented in `docs/SECURITY.md`
 
 ### Changed
 - 🛡️ Swagger UI and OpenAPI routes gated behind the `openapi` feature and disabled in release builds
+- 🚫 Daemon and CLI exit if executed as root
 
 ## [0.3.0] – 2025-08-02
 

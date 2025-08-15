@@ -560,6 +560,9 @@ checksum = "1171693293099992e19cddea4e8b849964e9846f4acee11b3948bcc337be8776"
 [[package]]
 name = "lightshuttle-cli"
 version = "0.3.0"
+dependencies = [
+ "users",
+]
 
 [[package]]
 name = "lightshuttle-dashboard"
@@ -579,6 +582,7 @@ dependencies = [
  "tower-http",
  "tracing",
  "tracing-subscriber",
+ "users",
  "utoipa",
  "utoipa-swagger-ui",
  "uuid",
@@ -1260,6 +1264,16 @@ dependencies = [
  "form_urlencoded",
  "idna",
  "percent-encoding",
+]
+
+[[package]]
+name = "users"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "24cc0f6d6f267b73e5a2cadf007ba8f9bc39c6a6f9666f8cf25ea809a153b032"
+dependencies = [
+ "libc",
+ "log",
 ]
 
 [[package]]
