@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - 🌐 CORS origins configurable via `ALLOWED_ORIGINS` env var; disallowed origins return `403`
 - 📝 Documented changelog tracking and feature flag usage in `AGENT.md`
+- 📘 OpenAPI docs and Swagger UI covering Apps, Health, Metrics and Version endpoints
+
+### Changed
+- 🛡️ Swagger UI and OpenAPI routes gated behind the `openapi` feature and disabled in release builds
 
 ## [0.3.0] – 2025-08-02
 

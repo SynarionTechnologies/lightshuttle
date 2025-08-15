@@ -17,6 +17,13 @@ use crate::routes::{
 };
 use crate::services::docker::{DockerClient, ShellDockerClient};
 
+#[cfg(all(feature = "openapi", debug_assertions))]
+use crate::openapi::ApiDoc;
+#[cfg(all(feature = "openapi", debug_assertions))]
+use utoipa::OpenApi;
+#[cfg(all(feature = "openapi", debug_assertions))]
+use utoipa_swagger_ui::SwaggerUi;
+
 /// Builds the API router mounted at `/api/v1`.
 pub fn router() -> Router {
     let docker: Arc<dyn DockerClient> = Arc::new(ShellDockerClient);
@@ -78,5 +85,11 @@ pub fn router() -> Router {
         api
     };
 
-    Router::new().nest("/api/v1", api).with_state(docker)
+    let app = Router::new().nest("/api/v1", api).with_state(docker);
+
+    #[cfg(all(feature = "openapi", debug_assertions))]
+    let app =
+        app.merge(SwaggerUi::new("/swagger-ui").url("/api-doc/openapi.json", ApiDoc::openapi()));
+
+    app
 }

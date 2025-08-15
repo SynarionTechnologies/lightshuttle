@@ -4,6 +4,9 @@ mod errors;
 mod routes;
 mod services;
 
+#[cfg(feature = "openapi")]
+mod openapi;
+
 use api::routes::router;
 use std::net::SocketAddr;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};

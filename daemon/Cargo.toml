@@ -14,9 +14,9 @@ axum = "0.7"
 # Async runtime
 tokio = { version = "1", default-features = false, features = ["rt-multi-thread", "macros", "signal", "time", "net"] }
 
-# Documentation
-utoipa = "4"
-utoipa-swagger-ui = "4"
+# Documentation (optional)
+utoipa = { version = "5", features = ["yaml"], optional = true }
+utoipa-swagger-ui = { version = "8", features = ["axum"], optional = true }
 
 # Error handling
 thiserror = "1.0"
@@ -35,3 +35,12 @@ tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
 # Utilities for testing (oneshot, etc.)
 http-body-util = "0.1"
 tower = { version = "0.4", features = ["util"] }
+
+[features]
+default = []
+openapi = ["utoipa", "utoipa-swagger-ui"]
+
+[[bin]]
+name = "openapi_export"
+path = "src/bin/openapi_export.rs"
+required-features = ["openapi"]
