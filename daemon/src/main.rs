@@ -17,6 +17,11 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 /// then starts serving incoming requests.
 #[tokio::main]
 async fn main() {
+    if users::get_current_uid() == 0 {
+        tracing::error!("Refusing to run as root");
+        std::process::exit(1);
+    }
+
     // Initialize the tracing subscriber for structured logging
     tracing_subscriber::registry()
         .with(tracing_subscriber::fmt::layer())
