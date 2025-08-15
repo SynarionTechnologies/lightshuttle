@@ -36,6 +36,9 @@ tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
 http-body-util = "0.1"
 tower = { version = "0.4", features = ["util"] }
 
+# UUID generation for tracing
+uuid = { version = "1", features = ["v4"] }
+
 [features]
 default = []
 openapi = ["utoipa", "utoipa-swagger-ui"]

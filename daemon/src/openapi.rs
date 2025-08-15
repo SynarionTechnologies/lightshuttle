@@ -1,8 +1,8 @@
 use utoipa::OpenApi;
 
 use crate::{
+    api::error::ApiError,
     docker::models::{AppInstance, AppStatus},
-    errors::ErrorResponse,
     routes::{
         apps,
         health::{self, HealthResponse},
@@ -44,7 +44,7 @@ use crate::{
         VersionResponse,
         AppInstance,
         AppStatus,
-        ErrorResponse,
+        ApiError,
     )),
     tags(
         (name = "Apps", description = "Application management"),

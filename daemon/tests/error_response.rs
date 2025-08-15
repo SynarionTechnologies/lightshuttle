@@ -33,7 +33,10 @@ async fn create_app_invalid_volume_returns_error_message() {
         .await
         .unwrap();
     let json: Value = serde_json::from_slice(&body_bytes).unwrap();
-    assert!(json["error"]
+    assert_eq!(json["code"].as_i64().unwrap(), 400);
+    assert!(json["trace_id"].as_str().is_some());
+    assert_eq!(json["message"].as_str().unwrap(), "Invalid input");
+    assert!(json["details"]
         .as_str()
         .unwrap()
         .contains("Invalid volume format"));

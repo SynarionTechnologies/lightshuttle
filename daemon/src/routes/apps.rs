@@ -33,8 +33,8 @@ use super::{
     request_body = CreateAppRequest,
     responses(
         (status = 201, description = "App created", body = CreateAppResponse),
-        (status = 400, description = "Bad request", body = crate::errors::ErrorResponse),
-        (status = 500, description = "Internal server error", body = crate::errors::ErrorResponse)
+        (status = 400, description = "Bad request", body = crate::api::error::ApiError),
+        (status = 500, description = "Internal server error", body = crate::api::error::ApiError)
     )
 ))]
 pub async fn create_app(
@@ -77,8 +77,8 @@ pub async fn create_app(
     params(("name", Path, description = "Container name")),
     responses(
         (status = 200, description = "App started"),
-        (status = 404, description = "App not found", body = crate::errors::ErrorResponse),
-        (status = 500, description = "Internal server error", body = crate::errors::ErrorResponse)
+        (status = 404, description = "App not found", body = crate::api::error::ApiError),
+        (status = 500, description = "Internal server error", body = crate::api::error::ApiError)
     )
 ))]
 pub async fn start_app(
@@ -104,8 +104,8 @@ pub async fn start_app(
     params(("name", Path, description = "Container name")),
     responses(
         (status = 200, description = "App stopped"),
-        (status = 404, description = "App not found", body = crate::errors::ErrorResponse),
-        (status = 500, description = "Internal server error", body = crate::errors::ErrorResponse)
+        (status = 404, description = "App not found", body = crate::api::error::ApiError),
+        (status = 500, description = "Internal server error", body = crate::api::error::ApiError)
     )
 ))]
 pub async fn stop_app(
@@ -131,8 +131,8 @@ pub async fn stop_app(
     params(("name", Path, description = "Container name")),
     responses(
         (status = 200, description = "App recreated", body = ContainerIdResponse),
-        (status = 404, description = "App not found", body = crate::errors::ErrorResponse),
-        (status = 500, description = "Internal server error", body = crate::errors::ErrorResponse)
+        (status = 404, description = "App not found", body = crate::api::error::ApiError),
+        (status = 500, description = "Internal server error", body = crate::api::error::ApiError)
     )
 ))]
 pub async fn recreate_app(
@@ -161,7 +161,7 @@ pub async fn recreate_app(
     params(Pagination),
     responses(
         (status = 200, description = "List running apps", body = AppListResponse),
-        (status = 500, description = "Internal server error", body = crate::errors::ErrorResponse)
+        (status = 500, description = "Internal server error", body = crate::api::error::ApiError)
     )
 ))]
 pub async fn list_apps(Query(pagination): Query<Pagination>) -> Result<impl IntoResponse, Error> {
@@ -220,8 +220,8 @@ pub async fn list_apps(Query(pagination): Query<Pagination>) -> Result<impl Into
     params(("name", Path, description = "Container name")),
     responses(
         (status = 200, description = "App details", body = crate::docker::models::AppInstance),
-        (status = 404, description = "App not found", body = crate::errors::ErrorResponse),
-        (status = 500, description = "Internal server error", body = crate::errors::ErrorResponse)
+        (status = 404, description = "App not found", body = crate::api::error::ApiError),
+        (status = 500, description = "Internal server error", body = crate::api::error::ApiError)
     )
 ))]
 pub async fn get_app(
@@ -249,8 +249,8 @@ pub async fn get_app(
     params(("name", Path, description = "Container name")),
     responses(
         (status = 200, description = "Container logs", content_type = "text/plain", body = String),
-        (status = 404, description = "App not found", body = crate::errors::ErrorResponse),
-        (status = 500, description = "Internal server error", body = crate::errors::ErrorResponse)
+        (status = 404, description = "App not found", body = crate::api::error::ApiError),
+        (status = 500, description = "Internal server error", body = crate::api::error::ApiError)
     )
 ))]
 pub async fn get_app_logs(Path(name): Path<String>) -> Result<Response, Error> {
@@ -273,8 +273,8 @@ pub async fn get_app_logs(Path(name): Path<String>) -> Result<Response, Error> {
     params(("name", Path, description = "Container name")),
     responses(
         (status = 200, description = "App status", body = StatusResponse),
-        (status = 404, description = "App not found", body = crate::errors::ErrorResponse),
-        (status = 500, description = "Internal server error", body = crate::errors::ErrorResponse)
+        (status = 404, description = "App not found", body = crate::api::error::ApiError),
+        (status = 500, description = "Internal server error", body = crate::api::error::ApiError)
     )
 ))]
 pub async fn get_app_status(
@@ -301,8 +301,8 @@ pub async fn get_app_status(
     params(("name", Path, description = "Container name")),
     responses(
         (status = 204, description = "App deleted"),
-        (status = 404, description = "App not found", body = crate::errors::ErrorResponse),
-        (status = 500, description = "Internal server error", body = crate::errors::ErrorResponse)
+        (status = 404, description = "App not found", body = crate::api::error::ApiError),
+        (status = 500, description = "Internal server error", body = crate::api::error::ApiError)
     )
 ))]
 pub async fn delete_app(Path(name): Path<String>) -> Result<impl IntoResponse, Error> {
