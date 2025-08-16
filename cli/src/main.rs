@@ -1,8 +1,11 @@
-fn main() {
-    if users::get_current_uid() == 0 {
-        eprintln!("Refusing to run as root.");
-        std::process::exit(1);
-    }
+use lightshuttle_cli::run;
 
-    println!("LightShuttle CLI is ready.");
+fn main() {
+    match run(users::get_current_uid()) {
+        Ok(_) => println!("LightShuttle CLI is ready."),
+        Err(e) => {
+            eprintln!("{}", e);
+            std::process::exit(1);
+        }
+    }
 }
