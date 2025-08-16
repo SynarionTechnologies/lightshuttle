@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🌐 `DOCKER_HOST` env var for proxy configuration
 - 🛡️ Default seccomp profile embedded in Docker image and applied to containers
 - 📚 Proxy usage documented in `docs/SECURITY.md`
+- 🧪 Unit and integration tests for CLI root check
 
 ### Changed
 - 🛡️ Swagger UI and OpenAPI routes gated behind the `openapi` feature and disabled in release builds
