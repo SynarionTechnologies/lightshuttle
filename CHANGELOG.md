@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - 🛡️ Swagger UI and OpenAPI routes gated behind the `openapi` feature and disabled in release builds
 - 🚫 Daemon and CLI exit if executed as root
+- 🗜️ Docker image now uses a distroless base and removes build-time tools to reduce attack surface
 
 ## [0.3.0] – 2025-08-02
 
