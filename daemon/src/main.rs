@@ -3,6 +3,7 @@ mod docker;
 mod errors;
 mod routes;
 mod services;
+mod models;
 
 #[cfg(feature = "openapi")]
 mod openapi;

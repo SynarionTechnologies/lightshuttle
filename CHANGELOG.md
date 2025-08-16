@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🌐 `DOCKER_HOST` env var for proxy configuration
 - 🛡️ Default seccomp profile embedded in Docker image and applied to containers
 - 📚 Proxy usage documented in `docs/SECURITY.md`
+- 🔐 API key authentication middleware with namespace-based RBAC and audit logging
 
 ### Changed
 - ⬆️ Updated Docker CLI to version 28.3.3 to include Go stdlib patches addressing CVE-2024-24790
