@@ -7,8 +7,8 @@ RUN cargo build --locked --release --manifest-path daemon/Cargo.toml
 FROM debian:stable-slim AS dockercli
 WORKDIR /docker
 
-ARG DOCKER_VERSION=25.0.3
-ARG DOCKER_SHA256=fa56a890c16ca83715d7e62b351ff0528fcb92f70100129caf6382a8945b95fb
+ARG DOCKER_VERSION=28.3.3
+ARG DOCKER_SHA256=40c16bcf324f354b382d07e845e6a79e3493fc0c09b252dff9e1a46125589bff
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates curl \
     && curl -fsSL "https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_VERSION}.tgz" -o docker.tgz \
