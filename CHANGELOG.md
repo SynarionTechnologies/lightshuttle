@@ -22,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - ⬆️ Updated Docker CLI to version 28.3.3 to include Go stdlib patches addressing CVE-2024-24790
 - 🛡️ Swagger UI and OpenAPI routes gated behind the `openapi` feature and disabled in release builds
-- 🚫 Daemon and CLI exit if executed as root
+- 🚫 Daemon and CLI exit if executed as root on Unix; Windows builds skip this check to allow compilation
 - 🗜️ Docker image now uses a distroless base and removes build-time tools to reduce attack surface
 
 ## [0.3.0] – 2025-08-02
