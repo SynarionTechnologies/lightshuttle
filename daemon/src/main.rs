@@ -1,15 +1,17 @@
-mod api;
-mod docker;
-mod errors;
-mod routes;
-mod services;
-
-#[cfg(feature = "openapi")]
-mod openapi;
-
-use api::routes::router;
+use lightshuttle_core::api::routes::router;
 use std::net::SocketAddr;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+
+#[cfg(unix)]
+fn ensure_not_root() {
+    if users::get_current_uid() == 0 {
+        tracing::error!("Refusing to run as root");
+        std::process::exit(1);
+    }
+}
+
+#[cfg(not(unix))]
+fn ensure_not_root() {}
 
 /// Entry point for the LightShuttle daemon service.
 ///
@@ -17,10 +19,7 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 /// then starts serving incoming requests.
 #[tokio::main]
 async fn main() {
-    if users::get_current_uid() == 0 {
-        tracing::error!("Refusing to run as root");
-        std::process::exit(1);
-    }
+    ensure_not_root();
 
     // Initialize the tracing subscriber for structured logging
     tracing_subscriber::registry()
