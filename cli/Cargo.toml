@@ -7,3 +7,7 @@ edition = "2021"
 
 [target.'cfg(unix)'.dependencies]
 users = "0.11"
+
+[dev-dependencies]
+assert_cmd = "2"
+predicates = "3"
