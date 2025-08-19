@@ -34,4 +34,3 @@ ENV BIND_ADDRESS=0.0.0.0:7878
 EXPOSE 7878
 
 CMD ["lightshuttle"]
-    
