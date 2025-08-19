@@ -4,6 +4,8 @@
 
 # LightShuttle
 
+[Lire en français](README.fr.md)
+
 🚀 LightShuttle is a lightweight, fast, and self-hostable orchestrator for containerized applications, designed as a simple alternative to Kubernetes.
 
 ---
@@ -32,7 +34,7 @@
 
 - Rust (>= 1.76)
 - Docker installed and accessible (`docker` CLI must work)
-- Linux recommended (tested on Debian 12)
+- Linux recommended (tested on Debian 12). Windows builds are supported (tested on Windows 11)
 
 ---
 
