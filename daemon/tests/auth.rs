@@ -24,6 +24,7 @@ async fn rejects_missing_api_key() {
         .await
         .unwrap();
     assert_eq!(response.status(), axum::http::StatusCode::UNAUTHORIZED);
+    std::env::remove_var("API_KEYS_FILE");
 }
 
 #[tokio::test]
@@ -48,4 +49,5 @@ async fn accepts_valid_api_key() {
         .await
         .unwrap();
     assert_eq!(response.status(), axum::http::StatusCode::OK);
+    std::env::remove_var("API_KEYS_FILE");
 }

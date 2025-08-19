@@ -14,10 +14,27 @@ use crate::models::namespace::Namespace;
 static KEY_STORE: Lazy<HashMap<String, Namespace>> = Lazy::new(|| {
     let path = match std::env::var("API_KEYS_FILE") {
         Ok(p) => p,
-        Err(_) => return HashMap::new(),
+        Err(_) => {
+            warn!("API_KEYS_FILE not set; authentication disabled");
+            return HashMap::new();
+        }
     };
-    let data = std::fs::read_to_string(path).unwrap_or_default();
-    serde_json::from_str(&data).unwrap_or_default()
+
+    let data = match std::fs::read_to_string(&path) {
+        Ok(d) => d,
+        Err(e) => {
+            warn!(%path, error = %e, "Failed to read API keys file; authentication disabled");
+            return HashMap::new();
+        }
+    };
+
+    match serde_json::from_str(&data) {
+        Ok(map) => map,
+        Err(e) => {
+            warn!(%path, error = %e, "Failed to parse API keys file; authentication disabled");
+            HashMap::new()
+        }
+    }
 });
 
 /// Middleware that validates an `X-API-Key` header against the key store.
