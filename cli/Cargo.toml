@@ -4,3 +4,6 @@ version = "0.3.0"
 edition = "2021"
 
 [dependencies]
+
+[target.'cfg(unix)'.dependencies]
+users = "0.11"
