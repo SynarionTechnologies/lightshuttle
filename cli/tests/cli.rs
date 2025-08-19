@@ -1,7 +1,6 @@
 #[cfg(unix)]
 mod unix_cli_tests {
     use assert_cmd::prelude::*;
-    use predicates::prelude::*;
     use std::process::Command;
 
     #[test]
