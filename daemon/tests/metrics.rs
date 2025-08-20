@@ -1,6 +1,6 @@
 use axum::{
     body::Body,
-    http::{Request, StatusCode},
+    http::{header, Request, StatusCode},
 };
 use lightshuttle_core::api::routes::router;
 use tower::ServiceExt;
@@ -18,4 +18,8 @@ async fn metrics_works() {
         .await
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(
+        response.headers().get(header::CONTENT_TYPE).unwrap(),
+        "text/plain; version=0.0.4"
+    );
 }

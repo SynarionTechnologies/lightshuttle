@@ -95,6 +95,14 @@ BIND_ADDRESS=0.0.0.0:7878 cargo run --bin lightshuttle_core
 
 ---
 
+## Metrics
+
+A Prometheus-compatible endpoint is available at `/api/v1/metrics`. It exposes
+basic metrics such as `http_requests_total` and `uptime_seconds` to monitor the
+daemon.
+
+---
+
 ## Roadmap
 
 - [x] Basic container lifecycle (create, list, delete, logs)
