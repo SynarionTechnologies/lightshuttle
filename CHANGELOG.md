@@ -16,8 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🆔 Structured `ApiError` responses with per-request trace IDs
 - 🌐 `DOCKER_HOST` env var for proxy configuration
 - 🛡️ Default seccomp profile embedded in Docker image and applied to containers
-- 📚 Proxy usage documented in `docs/SECURITY.md`
+- 📚 Proxy usage documented in `docs/en/security.md`
 - 🧾 Docker publish workflow attaches SBOM and provenance attestations
+- 🔐 Optional JWT authentication via `JWT_SECRET` environment variable (32+ chars)
 
 ### Changed
 - ⬆️ Updated Docker CLI to version 28.3.3 to include Go stdlib patches addressing CVE-2024-24790

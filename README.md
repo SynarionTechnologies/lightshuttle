@@ -60,6 +60,7 @@ You can run LightShuttle directly with Docker:
 docker run -d \
   -p 7878:7878 \
   -e BIND_ADDRESS=0.0.0.0:7878 \
+  -e JWT_SECRET=$(openssl rand -hex 32) \
   -v /var/run/docker.sock:/var/run/docker.sock \
   synarion/lightshuttle:latest
 ```
@@ -90,6 +91,13 @@ You can override the default address by setting the `BIND_ADDRESS` environment v
 ```bash
 BIND_ADDRESS=0.0.0.0:7878 cargo run --bin lightshuttle_core
 ```
+
+To require a JWT for all API calls, set `JWT_SECRET` with at least 32 characters and sign tokens with this secret:
+
+```bash
+JWT_SECRET=$(openssl rand -hex 32) cargo run --bin lightshuttle_core
+```
+Tokens must be signed with **HS256** and contain an `exp` (expiration) claim.
 
 ---
 

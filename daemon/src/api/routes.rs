@@ -8,7 +8,7 @@ use axum::{
 use std::{convert::Infallible, env, sync::Arc};
 use tower_http::cors::{Any, CorsLayer};
 
-use crate::api::error::trace_id_middleware;
+use crate::api::{auth::jwt_auth_middleware, error::trace_id_middleware};
 use crate::routes::{
     apps::{
         create_app, delete_app, get_app, get_app_logs, get_app_status, list_apps, recreate_app,
@@ -60,6 +60,7 @@ pub fn router() -> Router {
         .route("/health", get(health))
         .route("/version", get(version))
         .route("/metrics", get(metrics))
+        .layer(from_fn(jwt_auth_middleware))
         .layer(cors)
         .with_state(docker.clone());
 
