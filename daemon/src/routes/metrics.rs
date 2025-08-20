@@ -1,12 +1,10 @@
-use axum::Json;
-use serde::Serialize;
+use axum::{
+    http::{header, HeaderMap, HeaderValue},
+    response::IntoResponse,
+};
+use metrics::gauge;
 
-#[derive(Serialize)]
-#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
-pub struct MetricsResponse {
-    uptime: &'static str,
-    requests_handled: u32,
-}
+use crate::metrics::{METRICS_HANDLE, START_TIME};
 
 #[cfg_attr(
     feature = "openapi",
@@ -14,12 +12,17 @@ pub struct MetricsResponse {
         get,
         path = "/metrics",
         tag = "Metrics",
-        responses((status = 200, description = "Service metrics", body = MetricsResponse))
+        responses((status = 200, description = "Service metrics", content_type = "text/plain"))
     )
 )]
-pub async fn metrics() -> Json<MetricsResponse> {
-    Json(MetricsResponse {
-        uptime: "42s",
-        requests_handled: 8,
-    })
+pub async fn metrics() -> impl IntoResponse {
+    let uptime = START_TIME.elapsed().as_secs_f64();
+    gauge!("uptime_seconds", uptime);
+    let body = METRICS_HANDLE.render();
+    let mut headers = HeaderMap::new();
+    headers.insert(
+        header::CONTENT_TYPE,
+        HeaderValue::from_static("text/plain; version=0.0.4"),
+    );
+    (headers, body)
 }

@@ -33,6 +33,10 @@ tower-http = { version = "0.5", features = ["cors"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
 
+# Metrics and observability
+metrics = "0.21"
+metrics-exporter-prometheus = "0.13"
+
 # Utilities for testing (oneshot, etc.)
 http-body-util = "0.1"
 tower = { version = "0.4", features = ["util"] }

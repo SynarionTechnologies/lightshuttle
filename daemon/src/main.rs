@@ -1,4 +1,5 @@
 use lightshuttle_core::api::routes::router;
+use lightshuttle_core::metrics;
 use std::net::SocketAddr;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -26,6 +27,9 @@ async fn main() {
         .with(tracing_subscriber::fmt::layer())
         .with(tracing_subscriber::EnvFilter::new("info"))
         .init();
+
+    // Prepare metrics recorder and startup timestamp
+    metrics::init();
 
     // Read bind address from environment variable or fallback to default
     let bind_addr = std::env::var("BIND_ADDRESS").unwrap_or_else(|_| "127.0.0.1:7878".to_string());
