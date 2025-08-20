@@ -6,7 +6,7 @@ use crate::{
     routes::{
         apps,
         health::{self, HealthResponse},
-        metrics::{self, MetricsResponse},
+        metrics,
         models::{
             AppListResponse, ContainerIdResponse, CreateAppRequest, CreateAppResponse, Pagination,
             StatusResponse,
@@ -40,7 +40,6 @@ use crate::{
         ContainerIdResponse,
         StatusResponse,
         HealthResponse,
-        MetricsResponse,
         VersionResponse,
         AppInstance,
         AppStatus,

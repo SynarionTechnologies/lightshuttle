@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- 📈 Prometheus metrics endpoint with basic request and uptime instrumentation
 - 🌐 CORS origins configurable via `ALLOWED_ORIGINS` env var; disallowed origins return `403`
 - 📝 Documented changelog tracking and feature flag usage in `AGENT.md`
 - 📘 OpenAPI docs and Swagger UI covering Apps, Health, Metrics and Version endpoints
@@ -27,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🚫 Daemon and CLI exit if executed as root on Unix; Windows builds skip this check to allow compilation
 - 🗜️ Docker image now uses a distroless base and removes build-time tools to reduce attack surface
 - 🔐 Warn when API key store is missing or invalid
+- 🧹 Avoid `expect` when initializing Prometheus recorder for Clippy compliance
 
 ## [0.3.0] – 2025-08-02
 
